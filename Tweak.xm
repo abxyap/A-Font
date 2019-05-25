@@ -67,6 +67,11 @@ typedef NSString *UIFontTextStyle;
   UIFont *ret = [self fontWithDescriptor:[font fontDescriptorWithFamily:fontname] size:font.pointSize];
   return ret;
 }
++ (id)ib_preferredFontForTextStyle:(id)arg1 {
+  UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
+  UIFont *ret = [self fontWithDescriptor:[font fontDescriptorWithFamily:fontname] size:font.pointSize];
+  return ret;
+}
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(double)arg2 {
   return [self fontWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
 }
@@ -77,6 +82,18 @@ typedef NSString *UIFontTextStyle;
 }
 + (id)fontWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3 {
   return [self fontWithName:fontname size:arg3 traits:arg2];
+}
++ (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
+  return [self fontWithName:fontname size:arg1];
+}
+%end
+
+%hook UIKBRenderFactoryiPhoneChoco
+- (id)thinKeycapsFontName {
+  return fontname;
+}
+- (id)lightKeycapsFontName {
+  return fontname;
 }
 %end
 
