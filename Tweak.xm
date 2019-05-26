@@ -1,6 +1,7 @@
 #include <UIKit/UIKit.h>
 
 NSString *fontname;
+BOOL enableSafari;
 
 typedef NSString *UIFontTextStyle;
 
@@ -87,7 +88,6 @@ typedef NSString *UIFontTextStyle;
   return [self fontWithName:fontname size:arg1];
 }
 %end
-
 %hook UIKBRenderFactoryiPhoneChoco
 - (id)thinKeycapsFontName {
   return fontname;
@@ -97,9 +97,21 @@ typedef NSString *UIFontTextStyle;
 }
 %end
 
+@interface WKWebView
+-(void)evaluateJavaScript:(id)arg1 completionHandler:(id)arg2 ;
+@end
+
+%hook WKWebView
+-(void)_didFinishLoadForMainFrame {
+  %orig;
+  if(enableSafari) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
+}
+%end
+
 %ctor {
 	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
   fontname = plistDict[@"font"];
+  enableSafari = [plistDict[@"enableSafari"] boolValue];
   NSArray *fonts = [UIFont familyNames];
   if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts containsObject:fontname]) {
     HBLogDebug(@"A-Font is will hooking UIFont.");

@@ -25,10 +25,17 @@ NSMutableDictionary *prefs;
 			specifier;
 		})];
 
-		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"A-Font Settings" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil]];
-		PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
-		[specifier.properties setValue:@"isEnabled" forKey:@"displayIdentifier"];
-		[specifiers addObject:specifier];
+		[specifiers addObject:({
+				[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"A-Font Settings" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil]];
+				PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+				[specifier.properties setValue:@"isEnabled" forKey:@"displayIdentifier"];
+			specifier;
+		})];
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable in WebKit" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+			[specifier.properties setValue:@"enableSafari" forKey:@"displayIdentifier"];
+			specifier;
+		})];
 		PSSpecifier *_fontSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Font" target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
