@@ -88,12 +88,17 @@ typedef NSString *UIFontTextStyle;
   return [self fontWithName:fontname size:arg1];
 }
 %end
-%hook UIKBRenderFactoryiPhoneChoco
+%hook UIKBRenderFactory
 - (id)thinKeycapsFontName {
   return fontname;
 }
 - (id)lightKeycapsFontName {
   return fontname;
+}
+%end
+%hook UIKBTextStyle
++ (id)styleWithFontName:(id)arg1 withFontSize:(double)arg2 {
+  return %orig(fontname, arg2);
 }
 %end
 
