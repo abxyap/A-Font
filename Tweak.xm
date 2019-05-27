@@ -137,7 +137,8 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
   fontname = plistDict[@"font"];
   enableSafari = [plistDict[@"enableSafari"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
-  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0) {
+	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
+  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && [plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true) {
 
 
 		// NSFileManager *manager = [NSFileManager defaultManager];

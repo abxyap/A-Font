@@ -6,10 +6,11 @@ endif
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = AFontPrefs
-AFontPrefs_FILES = AFPRootListController.m
+AFontPrefs_FILES = AFPRootListController.m AFPBlackListController.m
 AFontPrefs_INSTALL_PATH = /Library/PreferenceBundles
 AFontPrefs_FRAMEWORKS = UIKit
 AFontPrefs_PRIVATE_FRAMEWORKS = Preferences
+AFontPrefs_LIBRARIES = applist
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 
