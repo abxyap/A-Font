@@ -9,6 +9,10 @@ typedef NSString *UIFontTextStyle;
 + (id)fontWithName:(id)arg1 size:(double)arg2 traits:(int)arg3;
 @end
 
+UIFont *changeFont(NSString *orignalfont, double size, int traits) {
+  return [UIFont fontWithName:fontname size:size traits: arg3];
+}
+
 %hook UIFont
 + (id)fontWithName:(id)arg1 size:(double)arg2 {
   return %orig(fontname, arg2);
@@ -17,43 +21,43 @@ typedef NSString *UIFontTextStyle;
   return %orig(fontname, arg2, arg3);
 }
 + (id)boldSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)userFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 design:(id)arg3 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)systemFontOfSize:(double)arg1 traits:(int)arg2 {
-  return [self fontWithName:fontname size:arg1 traits:arg2];
+  return changeFont(nil, arg1, arg2);
 }
 + (id)systemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)italicSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)_systemFontsOfSize:(double)arg1 traits:(int)arg2 {
-  return [self fontWithName:fontname size:arg1 traits:arg2];
+  return changeFont(nil, arg1, arg2);
 }
 + (id)_thinSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)_ultraLightSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)_lightSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)_opticalBoldSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 + (id)_opticalSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 - (id)fontName {
   return fontname;
@@ -82,10 +86,10 @@ typedef NSString *UIFontTextStyle;
   return ret;
 }
 + (id)fontWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3 {
-  return [self fontWithName:fontname size:arg3 traits:arg2];
+  return changeFont(nil, arg1, arg2);
 }
 + (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
-  return [self fontWithName:fontname size:arg1];
+  return changeFont(nil, arg1, nil);
 }
 %end
 %hook UIKBRenderFactory
