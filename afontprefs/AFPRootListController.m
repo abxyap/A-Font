@@ -1,4 +1,5 @@
 #include "AFPRootListController.h"
+#include "AFPBlackListController.h"
 #import <spawn.h>
 #define PREFERENCE_IDENTIFIER @"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"
 NSMutableDictionary *prefs;
@@ -40,6 +41,7 @@ NSMutableDictionary *prefs;
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
 		[specifiers addObject:_fontSpecifier];
+		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Blacklist" target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
 
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Recommended" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
@@ -80,7 +82,7 @@ NSMutableDictionary *prefs;
 	return prefs[@"font"];
 }
 - (NSArray *)valuesSource:(id)target {
-	return [UIFont familyNames];
+	return [[UIFont familyNames] sortedArrayUsingSelector:@selector(compare:)];
 }
 
 -(void)openCredits:(PSSpecifier *)specifier {
