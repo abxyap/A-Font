@@ -80,7 +80,7 @@ NSMutableDictionary *prefs;
 	return prefs[@"font"];
 }
 - (NSArray *)valuesSource:(id)target {
-	return [UIFont familyNames];
+	return [[UIFont familyNames] sortedArrayUsingSelector:@selector(compare:)];
 }
 
 -(void)openCredits:(PSSpecifier *)specifier {
