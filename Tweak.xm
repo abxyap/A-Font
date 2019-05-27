@@ -10,7 +10,8 @@ typedef NSString *UIFontTextStyle;
 @end
 
 UIFont *changeFont(NSString *orignalfont, double size, int traits) {
-  return [UIFont fontWithName:fontname size:size traits: arg3];
+  if(traits == nil) return [UIFont fontWithName:fontname size:size];
+  else return [UIFont fontWithName:fontname size:size traits:traits];
 }
 
 %hook UIFont
