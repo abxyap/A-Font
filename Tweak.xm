@@ -17,62 +17,66 @@ BOOL Search(NSString* path, NSString* search){
 	else return NO;
 }
 
-UIFont *changeFont(NSString *originalfont, double size, int traits) {
-  NSString *font = fontname;
-  if(originalfont != nil && Search(originalfont, @"icon")) font = originalfont;
-  if(!traits) return [UIFont fontWithName:font size:size];
-  else return [UIFont fontWithName:font size:size traits:traits];
+BOOL checkFont(NSString* font) {
+	if(font == nil) return false;
+  if(
+    Search(font, @"icon")
+    || Search(font, @"glyph")
+  ) return true;
+  else return false;
 }
 
 %hook UIFont
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
-  if(Search(arg1, @"icon")) return %orig;
+  if(checkFont(arg1)) return %orig;
   else return %orig(fontname, arg2);
-  // return changeFont(arg1, arg2, nil);
 }
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
-  if(Search(arg1, @"icon")) return %orig;
+  if(checkFont(arg1)) return %orig;
   else return %orig(fontname, arg2, arg3);
-  // return changeFont(arg1, arg2, arg3);
+}
++ (id)fontWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3 {
+	if(checkFont(arg1)) return %orig;
+  else return %orig(fontname, arg3, arg3);
 }
 + (id)boldSystemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)userFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 design:(id)arg3 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 traits:(int)arg2 {
-  return changeFont(nil, arg1, arg2);
+  return [self fontWithName:fontname size:arg1 traits:arg2];
 }
 + (id)systemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)italicSystemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)_systemFontsOfSize:(double)arg1 traits:(int)arg2 {
-  return changeFont(nil, arg1, arg2);
+  return [self fontWithName:fontname size:arg1 traits:arg2];
 }
 + (id)_thinSystemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)_ultraLightSystemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)_lightSystemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)_opticalBoldSystemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 + (id)_opticalSystemFontOfSize:(double)arg1 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
 }
 - (id)fontName {
   return fontname;
@@ -93,6 +97,7 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
   return ret;
 }
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(double)arg2 {
+  if(checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
   return [self fontWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
 }
 + (id)defaultFontForTextStyle:(UIFontTextStyle)arg1 {
@@ -100,11 +105,11 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
   UIFont *ret = [self fontWithDescriptor:[font fontDescriptorWithFamily:fontname] size:font.pointSize];
   return ret;
 }
-+ (id)fontWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3 {
-  return changeFont(arg1, arg3, arg2);
-}
 + (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
-  return changeFont(nil, arg1, nil);
+  return [self fontWithName:fontname size:arg1];
+}
+- (UIFont *)fontWithSize:(CGFloat)fontSize {
+  return [UIFont fontWithName:fontname size:fontSize];
 }
 %end
 %hook UIKBRenderFactory
@@ -121,6 +126,18 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
 }
 %end
 
+@interface _UIStatusBarStringView : UILabel
+@property (nonatomic, assign) long long fontStyle;
+@end
+
+%hook _UIStatusBarStringView
+-(void)setText:(NSString *)arg1 {
+	%orig;
+	HBLogDebug(@"hi~@ %lld, %@", self.fontStyle, arg1);
+	if([arg1 isEqualToString:@"LTE"]) self.fontStyle = 1;
+}
+%end
+
 @interface WKWebView
 -(void)evaluateJavaScript:(id)arg1 completionHandler:(id)arg2 ;
 @end
@@ -128,7 +145,8 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
 %hook WKWebView
 -(void)_didFinishLoadForMainFrame {
   %orig;
-  if(enableSafari) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
+	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
+  if(enableSafari && ![identifier isEqualToString:@"com.apple.mobilesafari"]) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
 }
 %end
 
@@ -138,7 +156,7 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
   enableSafari = [plistDict[@"enableSafari"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
 	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
-  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && [plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true) {
+  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true)) {
 
 
 		// NSFileManager *manager = [NSFileManager defaultManager];
