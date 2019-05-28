@@ -128,7 +128,8 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
 %hook WKWebView
 -(void)_didFinishLoadForMainFrame {
   %orig;
-  if(enableSafari) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
+	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
+  if(enableSafari && ![identifier isEqualString:@"com.apple.mobilesafari"]) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
 }
 %end
 
@@ -138,7 +139,7 @@ UIFont *changeFont(NSString *originalfont, double size, int traits) {
   enableSafari = [plistDict[@"enableSafari"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
 	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
-  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && [plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true) {
+  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true)) {
 
 
 		// NSFileManager *manager = [NSFileManager defaultManager];
