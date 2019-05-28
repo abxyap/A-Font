@@ -17,21 +17,29 @@ BOOL Search(NSString* path, NSString* search){
 	else return NO;
 }
 
+BOOL checkFont(NSString* font) {
+  if(
+    Search(font, @"icon")
+    || Search(font, @"spui")
+  ) return true;
+  else return false;
+}
+
 UIFont *changeFont(NSString *originalfont, double size, int traits) {
   NSString *font = fontname;
-  if(originalfont != nil && Search(originalfont, @"icon")) font = originalfont;
+  if(originalfont != nil && checkFont(originalfont)) font = originalfont;
   if(!traits) return [UIFont fontWithName:font size:size];
   else return [UIFont fontWithName:font size:size traits:traits];
 }
 
 %hook UIFont
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
-  if(Search(arg1, @"icon")) return %orig;
+  if(checkFont(arg1) return %orig;
   else return %orig(fontname, arg2);
   // return changeFont(arg1, arg2, nil);
 }
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
-  if(Search(arg1, @"icon")) return %orig;
+  if(checkFont(arg1)) return %orig;
   else return %orig(fontname, arg2, arg3);
   // return changeFont(arg1, arg2, arg3);
 }
