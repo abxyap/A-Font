@@ -22,7 +22,8 @@ BOOL checkFont(NSString* font) {
   if(
     Search(font, @"icon")
     || Search(font, @"glyph")
-  ) return true;
+    || Search(font, @"wundercon")
+  ) {return true;}
   else return false;
 }
 
@@ -37,7 +38,7 @@ BOOL checkFont(NSString* font) {
 }
 + (id)fontWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3 {
 	if(checkFont(arg1)) return %orig;
-  else return %orig(fontname, arg3, arg3);
+  else return [self fontWithName:fontname size:arg3 traits:arg2];
 }
 + (id)boldSystemFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:arg1];
@@ -78,32 +79,32 @@ BOOL checkFont(NSString* font) {
 + (id)_opticalSystemFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:arg1];
 }
-- (id)fontName {
-  return fontname;
-}
+// - (id)fontName {
+//   return fontname;
+// }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:[font fontDescriptorWithFamily:fontname] size:font.pointSize];
+  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
   return ret;
 }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 compatibleWithTraitCollection:(id)arg2 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:[font fontDescriptorWithFamily:fontname] size:font.pointSize];
+  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
   return ret;
 }
-+ (id)ib_preferredFontForTextStyle:(id)arg1 {
++ (id)ib_preferredFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:[font fontDescriptorWithFamily:fontname] size:font.pointSize];
+  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
+  return ret;
+}
++ (id)defaultFontForTextStyle:(UIFontTextStyle)arg1 {
+  UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
+  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
   return ret;
 }
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(double)arg2 {
   if(checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
   return [self fontWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
-}
-+ (id)defaultFontForTextStyle:(UIFontTextStyle)arg1 {
-  UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:[font fontDescriptorWithFamily:fontname] size:font.pointSize];
-  return ret;
 }
 + (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
   return [self fontWithName:fontname size:arg1];
@@ -133,7 +134,6 @@ BOOL checkFont(NSString* font) {
 %hook _UIStatusBarStringView
 -(void)setText:(NSString *)arg1 {
 	%orig;
-	HBLogDebug(@"hi~@ %lld, %@", self.fontStyle, arg1);
 	if([arg1 isEqualToString:@"LTE"]) self.fontStyle = 1;
 }
 %end
@@ -145,8 +145,8 @@ BOOL checkFont(NSString* font) {
 %hook WKWebView
 -(void)_didFinishLoadForMainFrame {
   %orig;
-	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
-  if(enableSafari && ![identifier isEqualToString:@"com.apple.mobilesafari"]) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
+	NSArray *fonts = [UIFont familyNames];
+  if(enableSafari && [fonts containsObject:fontname]) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
 }
 %end
 
