@@ -79,7 +79,7 @@ NSMutableDictionary *prefs;
 }
 - (NSString *)getFont:(PSSpecifier *)specifier {
 	if([specifier.name isEqualToString:@"Bold Font"]) return (prefs[@"boldfont"] ? prefs[@"boldfont"] : @"Automatic");
-	else return prefs[@"font"] ? prefs[@"font"] : @"NanumSquareRound";
+	else return prefs[@"font"];
 }
 - (NSArray *)valuesSource:(PSSpecifier *)target {
 	NSMutableArray *dic = [[[UIFont familyNames] sortedArrayUsingSelector:@selector(compare:)] mutableCopy];
