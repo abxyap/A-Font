@@ -27,7 +27,11 @@ NSMutableDictionary *prefs;
 		})];
 
 		[specifiers addObject:({
-				[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"A-Font Settings" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil]];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"A-Font Settings" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+			[specifier.properties setValue:@"A-Font automatically load fonts in /Library/A-Font/. You can also load the font using the profile." forKey:@"footerText"];
+			specifier;
+		})];
+		[specifiers addObject:({
 				PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
 				[specifier.properties setValue:@"isEnabled" forKey:@"displayIdentifier"];
 			specifier;
@@ -41,22 +45,16 @@ NSMutableDictionary *prefs;
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
 		[specifiers addObject:_fontSpecifier];
+		PSSpecifier *_boldFontSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Bold Font" target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
+		[_boldFontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
+		[_boldFontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
+		[specifiers addObject:_boldFontSpecifier];
 		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Blacklist" target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
 
-		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Recommended" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
-			[specifier.properties setValue:@"Copy your font to Font Manager and install it." forKey:@"footerText"];
-			specifier;
-		})];
+		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Recommended" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil]];
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Restart SpringBoard" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 	    specifier->action = @selector(Respring);
-			specifier;
-		})];
-		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Install Font Manager (App Store)" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
-			[specifier setIdentifier:@"fontmanager"];
-	    specifier->action = @selector(openCredits:);
 			specifier;
 		})];
 
@@ -75,20 +73,25 @@ NSMutableDictionary *prefs;
 }
 
 - (void)setFont:(NSString *)fontName forSpecifier:(PSSpecifier*)specifier {
-	prefs[@"font"] = fontName;
+	if([specifier.name isEqualToString:@"Bold Font"]) prefs[@"boldfont"] = fontName;
+	else prefs[@"font"] = fontName;
 	[[prefs copy] writeToFile:PREFERENCE_IDENTIFIER atomically:FALSE];
 }
 - (NSString *)getFont:(PSSpecifier *)specifier {
-	return prefs[@"font"];
+	if([specifier.name isEqualToString:@"Bold Font"]) return (prefs[@"boldfont"] ? prefs[@"boldfont"] : @"Automatic");
+	else return prefs[@"font"];
 }
-- (NSArray *)valuesSource:(id)target {
-	return [[UIFont familyNames] sortedArrayUsingSelector:@selector(compare:)];
+- (NSArray *)valuesSource:(PSSpecifier *)target {
+	NSMutableArray *dic = [[[UIFont familyNames] sortedArrayUsingSelector:@selector(compare:)] mutableCopy];
+	if(![target.name isEqualToString:@"Font"]) {
+		[dic insertObject:@"Automatic" atIndex:0];
+	}
+	return dic;
 }
 
 -(void)openCredits:(PSSpecifier *)specifier {
 	NSString *value = specifier.identifier;
 	if([value isEqualToString:@"BawAppie"]) [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://twitter.com/BawAppie"] options:@{} completionHandler:nil];
-	else if([value isEqualToString:@"fontmanager"]) [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://itunes.apple.com/app/font-manager/id789211165"] options:@{} completionHandler:nil];
 }
 -(void)getPreference {
 	if(![[NSFileManager defaultManager] fileExistsAtPath:PREFERENCE_IDENTIFIER]) prefs = [[NSMutableDictionary alloc] init];

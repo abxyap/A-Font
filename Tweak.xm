@@ -2,6 +2,7 @@
 #import <CoreText/CoreText.h>
 
 static NSString *fontname;
+static NSString *boldfontname;
 static BOOL enableSafari;
 
 typedef NSString *UIFontTextStyle;
@@ -79,9 +80,6 @@ BOOL checkFont(NSString* font) {
 + (id)_opticalSystemFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:arg1];
 }
-// - (id)fontName {
-//   return fontname;
-// }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
   UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
@@ -103,8 +101,14 @@ BOOL checkFont(NSString* font) {
   return ret;
 }
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(double)arg2 {
+	// HBLogDebug(@"%@", arg1.NSCTFontUIUsageAttribute);
   if(checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
-  return [self fontWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
+  // return [self fontWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
+	UIFontDescriptor *d = [UIFontDescriptor fontDescriptorWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
+	if(arg1.symbolicTraits & UIFontDescriptorTraitBold) {
+		 d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? arg2 : arg1.pointSize];
+	}
+	return %orig(d, 0);
 }
 + (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
   return [self fontWithName:fontname size:arg1];
@@ -145,34 +149,58 @@ BOOL checkFont(NSString* font) {
 %hook WKWebView
 -(void)_didFinishLoadForMainFrame {
   %orig;
-	NSArray *fonts = [UIFont familyNames];
-  if(enableSafari && [fonts containsObject:fontname]) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' !important }'; document.head.appendChild(node);", fontname] completionHandler:nil];
+  if(enableSafari) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' }'; document.head.appendChild(node);", fontname] completionHandler:nil];
 }
 %end
 
+NSString *findBoldFont(NSArray *list, NSString *name) {
+	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@"Regular" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@"-Regular" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
+	NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"R$" options:0 error:nil];
+	orig_font = [regex stringByReplacingMatchesInString:orig_font options:0 range:NSMakeRange(0, [orig_font length]) withTemplate:@""];
+	orig_font = [orig_font stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+
+	HBLogDebug(@"orig_font %@", orig_font);
+
+	if([list containsObject:[NSString stringWithFormat:@"%@-Bold", orig_font]]) return [NSString stringWithFormat:@"%@-Bold", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@-B", orig_font]]) return [NSString stringWithFormat:@"%@-B", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@Bold", orig_font]]) return [NSString stringWithFormat:@"%@Bold", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@B", orig_font]]) return [NSString stringWithFormat:@"%@B", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@ Bold", orig_font]]) return [NSString stringWithFormat:@"%@ Bold", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@ B", orig_font]]) return [NSString stringWithFormat:@"%@ B", orig_font];
+	return name;
+}
+
 %ctor {
 	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
+
+	NSFileManager *localFileManager=[[NSFileManager alloc] init];
+	NSDirectoryEnumerator *dirEnum = [localFileManager enumeratorAtPath:@"/Library/A-Font/"];
+
+	NSString *file;
+	while ((file = [dirEnum nextObject])) {
+		[UIFont familyNames];
+    CFErrorRef error;
+    NSString *fullPath = [NSString stringWithFormat:@"/Library/A-Font/%@", file];
+    CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
+    if(!CTFontManagerRegisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, &error)) {
+      CFStringRef errorDescription = CFErrorCopyDescription(error);
+      HBLogError(@"Failed to load font: %@", errorDescription);
+      CFRelease(errorDescription);
+    }
+	}
+
+	NSArray *fontlist = [UIFont familyNames];
   fontname = plistDict[@"font"];
-  enableSafari = [plistDict[@"enableSafari"] boolValue];
+	if(!plistDict[@"boldfont"] || [plistDict[@"boldfont"] isEqualToString:@"Automatic"]) boldfontname = findBoldFont(fontlist, fontname);
+	else boldfontname = plistDict[@"boldfont"];
+	if(![fontlist containsObject:fontname]) enableSafari = false;
+  else enableSafari = [plistDict[@"enableSafari"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
 	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
-  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true)) {
-
-
-		// NSFileManager *manager = [NSFileManager defaultManager];
-		// NSArray *subpaths = [manager contentsOfDirectoryAtPath:@"/var/mobile/Library/Fonts/Managed/" error:NULL];
-  	// for(NSString *key in subpaths) {
-    //   NSString *fullPath = [NSString stringWithFormat:@"/var/mobile/Library/Fonts/Managed/%@", key];
-    //   NSLog(@"file name: %@", fullPath);
-    //   CFErrorRef error;
-    //   CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
-    //   if (! CTFontManagerRegisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, &error)) {
-    //   // if (! CTFontManagerRegisterGraphicsFont(font, &error)) {
-    //       CFStringRef errorDescription = CFErrorCopyDescription(error);
-    //       NSLog(@"Failed to load font: %@", errorDescription);
-    //       CFRelease(errorDescription);
-    //   }
-		// }
+  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true) && ![identifier isEqualToString:@"com.apple.SafariViewService"]) {
     %init;
   }
 }
