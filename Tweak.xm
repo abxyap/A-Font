@@ -101,11 +101,9 @@ BOOL checkFont(NSString* font) {
   return ret;
 }
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(double)arg2 {
-	// HBLogDebug(@"%@", arg1.NSCTFontUIUsageAttribute);
   if(checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
-  // return [self fontWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
 	UIFontDescriptor *d = [UIFontDescriptor fontDescriptorWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
-	if(arg1.symbolicTraits & UIFontDescriptorTraitBold) {
+	if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) {
 		 d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? arg2 : arg1.pointSize];
 	}
 	return %orig(d, 0);
@@ -176,26 +174,26 @@ NSString *findBoldFont(NSArray *list, NSString *name) {
 %ctor {
 	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
 
-	NSFileManager *localFileManager=[[NSFileManager alloc] init];
-	NSDirectoryEnumerator *dirEnum = [localFileManager enumeratorAtPath:@"/Library/A-Font/"];
-
-	NSString *file;
-	while ((file = [dirEnum nextObject])) {
-		[UIFont familyNames];
-    CFErrorRef error;
-    NSString *fullPath = [NSString stringWithFormat:@"/Library/A-Font/%@", file];
-    CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
-    if(!CTFontManagerRegisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, &error)) {
-      CFStringRef errorDescription = CFErrorCopyDescription(error);
-      HBLogError(@"Failed to load font: %@", errorDescription);
-      CFRelease(errorDescription);
-    }
+	NSFileManager *manager = [NSFileManager defaultManager];
+	NSArray *subpaths = [manager contentsOfDirectoryAtPath:@"/Library/A-Font/" error:NULL];
+	[UIFont familyNames];
+	for(NSString *key in subpaths) {
+		NSString *fullPath = [NSString stringWithFormat:@"/Library/A-Font/%@", key];
+		CFErrorRef error;
+		CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
+		if(!CTFontManagerRegisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, &error)) {
+			CFStringRef errorDescription = CFErrorCopyDescription(error);
+			HBLogError(@"Failed to load font: %@", errorDescription);
+			CFRelease(errorDescription);
+		}
 	}
 
 	NSArray *fontlist = [UIFont familyNames];
   fontname = plistDict[@"font"];
-	if(!plistDict[@"boldfont"] || [plistDict[@"boldfont"] isEqualToString:@"Automatic"]) boldfontname = findBoldFont(fontlist, fontname);
-	else boldfontname = plistDict[@"boldfont"];
+	if(fontname != nil) {
+		if(!plistDict[@"boldfont"] || [plistDict[@"boldfont"] isEqualToString:@"Automatic"]) boldfontname = findBoldFont(fontlist, fontname);
+		else boldfontname = plistDict[@"boldfont"];
+	} else boldfontname = nil;
 	if(![fontlist containsObject:fontname]) enableSafari = false;
   else enableSafari = [plistDict[@"enableSafari"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
