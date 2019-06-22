@@ -193,7 +193,7 @@ NSString *findBoldFont(NSArray *list, NSString *name) {
 	}
 
 	NSArray *fontlist = [UIFont familyNames];
-  fontname = plistDict[@"font"];
+  fontname = plistDict[@"font"] ? plistDict[@"font"] : @"NanumSquareRound";
 	if(!plistDict[@"boldfont"] || [plistDict[@"boldfont"] isEqualToString:@"Automatic"]) boldfontname = findBoldFont(fontlist, fontname);
 	else boldfontname = plistDict[@"boldfont"];
 	if(![fontlist containsObject:fontname]) enableSafari = false;
