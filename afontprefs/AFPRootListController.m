@@ -8,6 +8,36 @@ NSMutableDictionary *prefs;
 - (void)openURL:(NSURL *)url options:(NSDictionary *)options completionHandler:(void (^)(BOOL success))completion;
 @end
 
+NSString *findBoldFont(NSArray *list, NSString *name) {
+	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@"Regular" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@"-Regular" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
+	NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"R$" options:0 error:nil];
+	orig_font = [regex stringByReplacingMatchesInString:orig_font options:0 range:NSMakeRange(0, [orig_font length]) withTemplate:@""];
+	orig_font = [orig_font stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+
+	if([list containsObject:[NSString stringWithFormat:@"%@-Bold", orig_font]]) return [NSString stringWithFormat:@"%@-Bold", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@-B", orig_font]]) return [NSString stringWithFormat:@"%@-B", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@Bold", orig_font]]) return [NSString stringWithFormat:@"%@Bold", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@B", orig_font]]) return [NSString stringWithFormat:@"%@B", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@ Bold", orig_font]]) return [NSString stringWithFormat:@"%@ Bold", orig_font];
+	if([list containsObject:[NSString stringWithFormat:@"%@ B", orig_font]]) return [NSString stringWithFormat:@"%@ B", orig_font];
+	return name;
+}
+
+NSArray *getFullFontList() {
+	NSArray *fonts = [UIFont familyNames];
+	NSMutableArray *fullList = [NSMutableArray new];
+	for(NSString *key in fonts) {
+		NSArray *fontList = [UIFont fontNamesForFamilyName:key];
+		for(NSString *name in fontList) {
+			[fullList addObject:name];
+		}
+	}
+	return fullList;
+}
+
 @implementation AFPRootListController
 
 - (NSArray *)specifiers {
@@ -73,18 +103,24 @@ NSMutableDictionary *prefs;
 }
 
 - (void)setFont:(NSString *)fontName forSpecifier:(PSSpecifier*)specifier {
+	if([fontName hasPrefix:@"Automatic ("]) fontName = @"Automatic";
 	if([specifier.name isEqualToString:@"Bold Font"]) prefs[@"boldfont"] = fontName;
 	else prefs[@"font"] = fontName;
 	[[prefs copy] writeToFile:PREFERENCE_IDENTIFIER atomically:FALSE];
 }
 - (NSString *)getFont:(PSSpecifier *)specifier {
-	if([specifier.name isEqualToString:@"Bold Font"]) return (prefs[@"boldfont"] ? prefs[@"boldfont"] : @"Automatic");
+	NSArray *fullList = getFullFontList();
+	NSString *boldfont = findBoldFont(fullList, prefs[@"font"]);
+	if([specifier.name isEqualToString:@"Bold Font"]) return (![prefs[@"boldfont"] isEqualToString:@"Automatic"] ? prefs[@"boldfont"] : [NSString stringWithFormat:@"Automatic (%@)", boldfont]);
 	else return prefs[@"font"];
 }
 - (NSArray *)valuesSource:(PSSpecifier *)target {
 	NSMutableArray *dic = [[[UIFont familyNames] sortedArrayUsingSelector:@selector(compare:)] mutableCopy];
 	if(![target.name isEqualToString:@"Font"]) {
-		[dic insertObject:@"Automatic" atIndex:0];
+		NSArray *fullList = getFullFontList();
+		dic = [[fullList sortedArrayUsingSelector:@selector(compare:)] mutableCopy];
+		NSString *boldfont = findBoldFont(fullList, prefs[@"font"]);
+		[dic insertObject:[NSString stringWithFormat:@"Automatic (%@)", boldfont] atIndex:0];
 	}
 	return dic;
 }

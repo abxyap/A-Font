@@ -159,9 +159,7 @@ NSString *findBoldFont(NSArray *list, NSString *name) {
 	NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"R$" options:0 error:nil];
 	orig_font = [regex stringByReplacingMatchesInString:orig_font options:0 range:NSMakeRange(0, [orig_font length]) withTemplate:@""];
 	orig_font = [orig_font stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-
-	HBLogDebug(@"orig_font %@", orig_font);
-
+	
 	if([list containsObject:[NSString stringWithFormat:@"%@-Bold", orig_font]]) return [NSString stringWithFormat:@"%@-Bold", orig_font];
 	if([list containsObject:[NSString stringWithFormat:@"%@-B", orig_font]]) return [NSString stringWithFormat:@"%@-B", orig_font];
 	if([list containsObject:[NSString stringWithFormat:@"%@Bold", orig_font]]) return [NSString stringWithFormat:@"%@Bold", orig_font];
@@ -169,6 +167,18 @@ NSString *findBoldFont(NSArray *list, NSString *name) {
 	if([list containsObject:[NSString stringWithFormat:@"%@ Bold", orig_font]]) return [NSString stringWithFormat:@"%@ Bold", orig_font];
 	if([list containsObject:[NSString stringWithFormat:@"%@ B", orig_font]]) return [NSString stringWithFormat:@"%@ B", orig_font];
 	return name;
+}
+
+NSArray *getFullFontList() {
+	NSArray *fonts = [UIFont familyNames];
+	NSMutableArray *fullList = [NSMutableArray new];
+	for(NSString *key in fonts) {
+		NSArray *fontList = [UIFont fontNamesForFamilyName:key];
+		for(NSString *name in fontList) {
+			[fullList addObject:name];
+		}
+	}
+	return fullList;
 }
 
 %ctor {
@@ -189,9 +199,10 @@ NSString *findBoldFont(NSArray *list, NSString *name) {
 	}
 
 	NSArray *fontlist = [UIFont familyNames];
+	NSArray *fullFontList = getFullFontList();
   fontname = plistDict[@"font"];
 	if(fontname != nil) {
-		if(!plistDict[@"boldfont"] || [plistDict[@"boldfont"] isEqualToString:@"Automatic"]) boldfontname = findBoldFont(fontlist, fontname);
+		if(!plistDict[@"boldfont"] || [plistDict[@"boldfont"] isEqualToString:@"Automatic"]) boldfontname = findBoldFont(fullFontList, fontname);
 		else boldfontname = plistDict[@"boldfont"];
 	} else boldfontname = nil;
 	if(![fontlist containsObject:fontname]) enableSafari = false;
