@@ -4,6 +4,7 @@
 static NSString *fontname;
 static NSString *boldfontname;
 static BOOL enableSafari;
+static BOOL WebKitImportant;
 
 typedef NSString *UIFontTextStyle;
 
@@ -147,7 +148,7 @@ BOOL checkFont(NSString* font) {
 %hook WKWebView
 -(void)_didFinishLoadForMainFrame {
   %orig;
-  if(enableSafari) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\' }'; document.head.appendChild(node);", fontname] completionHandler:nil];
+  if(enableSafari && [[UIFont familyNames] containsObject:fontname]) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\'%@ }'; document.head.appendChild(node);", fontname, (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
 }
 %end
 
@@ -199,15 +200,14 @@ NSArray *getFullFontList() {
 		}
 	}
 
-	NSArray *fontlist = [UIFont familyNames];
 	NSArray *fullFontList = getFullFontList();
   fontname = plistDict[@"font"];
 	if(fontname != nil) {
 		if(!plistDict[@"boldfont"] || [plistDict[@"boldfont"] isEqualToString:@"Automatic"]) boldfontname = findBoldFont(fullFontList, fontname);
 		else boldfontname = plistDict[@"boldfont"];
 	} else boldfontname = nil;
-	if(![fontlist containsObject:fontname]) enableSafari = false;
-  else enableSafari = [plistDict[@"enableSafari"] boolValue];
+  enableSafari = [plistDict[@"enableSafari"] boolValue];
+  WebKitImportant = [plistDict[@"WebKitImportant"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
 	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
   if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true) && ![identifier isEqualToString:@"com.apple.SafariViewService"]) {
