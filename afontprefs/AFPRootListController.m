@@ -10,6 +10,7 @@ NSMutableDictionary *prefs;
 
 NSString *findBoldFont(NSArray *list, NSString *name) {
 	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@"" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"-Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
@@ -110,7 +111,9 @@ NSArray *getFullFontList() {
 }
 - (NSString *)getFont:(PSSpecifier *)specifier {
 	NSArray *fullList = getFullFontList();
-	NSString *boldfont = findBoldFont(fullList, prefs[@"font"]);
+	NSString *boldfont;
+	if(!prefs[@"font"]) boldfont = @"Please select font.";
+	else boldfont = findBoldFont(fullList, prefs[@"font"]);
 	if([specifier.name isEqualToString:@"Bold Font"]) return (![prefs[@"boldfont"] isEqualToString:@"Automatic"] ? prefs[@"boldfont"] : [NSString stringWithFormat:@"Automatic (%@)", boldfont]);
 	else return prefs[@"font"];
 }
