@@ -133,7 +133,9 @@ NSArray *getFullFontList() {
 	if(![target.name isEqualToString:@"Font"]) {
 		NSArray *fullList = getFullFontList();
 		dic = [[fullList sortedArrayUsingSelector:@selector(compare:)] mutableCopy];
-		NSString *boldfont = findBoldFont(fullList, prefs[@"font"]);
+		NSString *boldfont;
+		if(!prefs[@"font"]) boldfont = @"Please select font.";
+		else boldfont = findBoldFont(fullList, prefs[@"font"]);
 		[dic insertObject:[NSString stringWithFormat:@"Automatic (%@)", boldfont] atIndex:0];
 	}
 	return dic;
