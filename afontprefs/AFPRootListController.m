@@ -67,11 +67,6 @@ NSArray *getFullFontList() {
 				[specifier.properties setValue:@"isEnabled" forKey:@"displayIdentifier"];
 			specifier;
 		})];
-		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable in WebKit" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
-			[specifier.properties setValue:@"enableSafari" forKey:@"displayIdentifier"];
-			specifier;
-		})];
 		PSSpecifier *_fontSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Font" target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
@@ -81,6 +76,22 @@ NSArray *getFullFontList() {
 		[_boldFontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
 		[specifiers addObject:_boldFontSpecifier];
 		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Blacklist" target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
+
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"WebKit Options" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+			[specifier.properties setValue:@"If this option is enabled, A-Font injects CSS into WebKit. Some fonts are not available in Safari." forKey:@"footerText"];
+			specifier;
+		})];
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable in WebKit" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+			[specifier.properties setValue:@"enableSafari" forKey:@"displayIdentifier"];
+			specifier;
+		})];
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Use !important tag" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+			[specifier.properties setValue:@"WebKitImportant" forKey:@"displayIdentifier"];
+			specifier;
+		})];
 
 		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Recommended" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil]];
 		[specifiers addObject:({
