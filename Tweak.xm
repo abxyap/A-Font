@@ -32,27 +32,35 @@ BOOL checkFont(NSString* font) {
 %hook UIFont
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
   if(checkFont(arg1)) return %orig;
+	if([arg1 isEqualToString:boldfontname]) return %orig;
   else return %orig(fontname, arg2);
 }
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
   if(checkFont(arg1)) return %orig;
+	if([arg1 isEqualToString:boldfontname]) return %orig;
   else return %orig(fontname, arg2, arg3);
 }
 + (id)fontWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3 {
 	if(checkFont(arg1)) return %orig;
+	if([arg1 isEqualToString:boldfontname]) return %orig;
   else return [self fontWithName:fontname size:arg3 traits:arg2];
 }
 + (id)boldSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:boldfontname != nil ? boldfontname : fontname size:arg1];
 }
 + (id)userFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:arg1];
 }
+// return [self fontWithName:(arg2 >= 400 && boldfontname != nil ? boldfont : fontname) size:arg1];
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 design:(id)arg3 {
-  return [self fontWithName:fontname size:arg1];
+	HBLogError(@"weight request detected.. %f", arg2);
+  // return [self fontWithName:fontname size:arg1];
+	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 {
-  return [self fontWithName:fontname size:arg1];
+	HBLogError(@"weight request detected.. %f", arg2);
+  // return [self fontWithName:fontname size:arg1];
+	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 traits:(int)arg2 {
   return [self fontWithName:fontname size:arg1 traits:arg2];
@@ -63,24 +71,24 @@ BOOL checkFont(NSString* font) {
 + (id)italicSystemFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:arg1];
 }
-+ (id)_systemFontsOfSize:(double)arg1 traits:(int)arg2 {
-  return [self fontWithName:fontname size:arg1 traits:arg2];
-}
-+ (id)_thinSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
-}
-+ (id)_ultraLightSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
-}
-+ (id)_lightSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
-}
-+ (id)_opticalBoldSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
-}
-+ (id)_opticalSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
-}
+// + (id)_systemFontsOfSize:(double)arg1 traits:(int)arg2 {
+//   return [self fontWithName:fontname size:arg1 traits:arg2];
+// }
+// + (id)_thinSystemFontOfSize:(double)arg1 {
+//   return [self fontWithName:fontname size:arg1];
+// }
+// + (id)_ultraLightSystemFontOfSize:(double)arg1 {
+//   return [self fontWithName:fontname size:arg1];
+// }
+// + (id)_lightSystemFontOfSize:(double)arg1 {
+//   return [self fontWithName:fontname size:arg1];
+// }
+// + (id)_opticalBoldSystemFontOfSize:(double)arg1 {
+//   return [self fontWithName:fontname size:arg1];
+// }
+// + (id)_opticalSystemFontOfSize:(double)arg1 {
+//   return [self fontWithName:fontname size:arg1];
+// }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
   UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
