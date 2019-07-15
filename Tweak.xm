@@ -142,11 +142,16 @@ BOOL checkFont(NSString* font) {
 @property (nonatomic, assign) long long fontStyle;
 @end
 
+%group iOS12
 %hook _UIStatusBarStringView
 -(void)setText:(NSString *)arg1 {
 	%orig;
-	if([arg1 isEqualToString:@"LTE"]) self.fontStyle = 1;
+	if([arg1 isEqualToString:@"LTE"]) {
+		HBLogError(@"default fontStyle is %lld", self.fontStyle);
+		self.fontStyle = 2;
+	}
 }
+%end
 %end
 
 @interface WKWebView
@@ -220,5 +225,9 @@ NSArray *getFullFontList() {
 	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
   if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true) && ![identifier isEqualToString:@"com.apple.SafariViewService"]) {
     %init;
+		float ver_float = [[[UIDevice currentDevice] systemVersion] floatValue];
+		if(ver_float >= 12) {
+			%init(iOS12)
+		}
   }
 }
