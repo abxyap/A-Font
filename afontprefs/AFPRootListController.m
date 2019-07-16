@@ -80,6 +80,7 @@ NSArray *getFullFontList() {
 
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Font Size" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+			[specifier.properties setValue:@"Don't change font size unless you have a problem with A-Font." forKey:@"footerText"];
 			specifier;
 		})];
     [specifiers addObject:({
