@@ -77,6 +77,24 @@ NSArray *getFullFontList() {
 		[specifiers addObject:_boldFontSpecifier];
 		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Blacklist" target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
 
+
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Font Size" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+			specifier;
+		})];
+    [specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"size" target:self set:@selector(setNumber:forSpecifier:) get:@selector(getNumber:) detail:Nil cell:PSSliderCell edit:Nil];
+			[specifier setProperty:@"size" forKey:@"displayIdentifier"];
+			[specifier setProperty:@1 forKey:@"default"];
+			[specifier setProperty:@0.5 forKey:@"min"];
+			[specifier setProperty:@1.5 forKey:@"max"];
+			[specifier setProperty:@YES forKey:@"isSegmented"];
+			[specifier setProperty:@10 forKey:@"segmentCount"];
+			[specifier setProperty:@YES forKey:@"showValue"];
+			specifier;
+		})];
+
+
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"WebKit Options" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
 			[specifier.properties setValue:@"If this option is enabled, A-Font injects CSS into WebKit. Some fonts are not available in Safari." forKey:@"footerText"];
@@ -112,6 +130,14 @@ NSArray *getFullFontList() {
 }
 -(NSNumber *)getSwitch:(PSSpecifier *)specifier {
 	return [prefs[[specifier propertyForKey:@"displayIdentifier"]] isEqual:@1] ? @1 : @0;
+}
+
+-(void)setNumber:(NSNumber *)value forSpecifier:(PSSpecifier *)specifier {
+	prefs[[specifier propertyForKey:@"displayIdentifier"]] = value;
+	[[prefs copy] writeToFile:PREFERENCE_IDENTIFIER atomically:FALSE];
+}
+-(NSNumber *)getNumber:(PSSpecifier *)specifier {
+	return prefs[[specifier propertyForKey:@"displayIdentifier"]] ? prefs[[specifier propertyForKey:@"displayIdentifier"]] : @1;
 }
 
 - (void)setFont:(NSString *)fontName forSpecifier:(PSSpecifier*)specifier {
