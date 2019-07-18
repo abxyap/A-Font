@@ -30,9 +30,12 @@ BOOL checkFont(NSString* font) {
     Search(font, @"icon")
     || Search(font, @"glyph")
     || Search(font, @"wundercon")
+    || Search(font, @"GoogleSans-Regular")
   ) {return true;}
   else return false;
 }
+
+id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 
 %hook UIFont
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
@@ -41,11 +44,12 @@ BOOL checkFont(NSString* font) {
   else return %orig(fontname, getSize(arg2));
 }
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
+	orig_systemFontOfSize = &%orig;
   if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig;
   else return %orig(fontname, getSize(arg2), arg3);
 }
-+ (id)fontWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3 {
++ (id)fontWithFamilyName:(NSString *)arg1 traits:(int)arg2 size:(double)arg3 {
 	if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig;
   else return [self fontWithName:fontname size:getSize(arg3) traits:arg2];
@@ -112,16 +116,11 @@ BOOL checkFont(NSString* font) {
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(double)arg2 {
   if(checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
 	UIFontDescriptor *d = [UIFontDescriptor fontDescriptorWithName:fontname size:arg2 != 0 ? getSize(arg2) : getSize(arg1.pointSize)];
-	if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) {
-		 d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? getSize(arg2) : getSize(arg1.pointSize)];
-	}
+	if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? getSize(arg2) : getSize(arg1.pointSize)];
 	return %orig(d, 0);
 }
 + (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
   return [self fontWithName:fontname size:getSize(arg1)];
-}
-- (UIFont *)fontWithSize:(CGFloat)fontSize {
-  return [UIFont fontWithName:fontname size:fontSize];
 }
 %end
 %hook UIKBRenderFactory
@@ -140,16 +139,22 @@ BOOL checkFont(NSString* font) {
 
 @interface _UIStatusBarStringView : UILabel
 @property (nonatomic, assign) long long fontStyle;
+@property (nonatomic, assign) NSString *originalText;
 @end
 
 %group iOS12
 %hook _UIStatusBarStringView
--(void)setText:(NSString *)arg1 {
-	%orig;
-	if([arg1 isEqualToString:@"LTE"]) {
-		HBLogError(@"default fontStyle is %lld", self.fontStyle);
-		self.fontStyle = 2;
+-(void)font {
+	if([self.originalText isEqualToString:@"LTE"]) {
+		self.font = orig_systemFontOfSize([UIFont class], _cmd, @".SFUIText-Medium", 12, 0);
 	}
+	%orig;
+}
+-(void)setText:(NSString *)text {
+	if([text isEqualToString:@"LTE"]) {
+		self.fontStyle = 1;
+	}
+	%orig;
 }
 %end
 %end
