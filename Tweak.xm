@@ -35,6 +35,10 @@ BOOL checkFont(NSString* font) {
   else return false;
 }
 
+@interface UIFont (AFontPrivate)
++ (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2;
+@end
+
 id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 
 %hook UIFont
@@ -42,6 +46,10 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
   if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig;
   else return %orig(fontname, getSize(arg2));
+}
+%new
++ (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2 {
+	return orig_systemFontOfSize([UIFont class], _cmd, arg1, arg2, 0);
 }
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
 	orig_systemFontOfSize = &%orig;
@@ -146,7 +154,7 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 %hook _UIStatusBarStringView
 -(void)font {
 	if([self.originalText isEqualToString:@"LTE"]) {
-		self.font = orig_systemFontOfSize([UIFont class], _cmd, @".SFUIText-Medium", 12, 0);
+		self.font = [UIFont fontWithNameWithoutAFont:@".SFUIText-Medium" size:12];
 	}
 	%orig;
 }
