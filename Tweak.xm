@@ -31,7 +31,7 @@ BOOL checkFont(NSString* font) {
     || Search(font, @"glyph")
     || Search(font, @"wundercon")
     || Search(font, @"GoogleSans-Regular")
-  ) {return true;}
+  ) return true;
   else return false;
 }
 
@@ -233,6 +233,11 @@ NSArray *getFullFontList() {
 		else boldfontname = plistDict[@"boldfont"];
 	} else boldfontname = nil;
 	size = plistDict[@"size"] ? plistDict[@"size"] : @1;
+
+	fontname = [fontname copy];
+	boldfontname = [boldfontname copy];
+	size = [size copy];
+
   enableSafari = [plistDict[@"enableSafari"] boolValue];
   WebKitImportant = [plistDict[@"WebKitImportant"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
