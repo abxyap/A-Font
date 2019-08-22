@@ -80,9 +80,6 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 + (id)systemFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:getSize(arg1)];
 }
-+ (id)systemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:getSize(arg1)];
-}
 + (id)italicSystemFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:getSize(arg1)];
 }
