@@ -45,7 +45,10 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
   if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig;
-  else return %orig(fontname, getSize(arg2));
+  else {
+		if([arg1 isEqualToString:@"-disablefontsize"]) return %orig(fontname, arg2);
+		return %orig(fontname, getSize(arg2));
+	}
 }
 %new
 + (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2 {
@@ -75,10 +78,10 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 traits:(int)arg2 {
-  return [self fontWithNameWithoutAFont:fontname size:arg1];
+  return [self fontWithName:@"-disablefontsize" size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 {
-  return [self fontWithNameWithoutAFont:fontname size:arg1];
+  return [self fontWithName:@"-disablefontsize" size:arg1];
 }
 + (id)italicSystemFontOfSize:(double)arg1 {
   return [self fontWithName:fontname size:arg1];
