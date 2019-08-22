@@ -63,75 +63,82 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 + (id)fontWithFamilyName:(NSString *)arg1 traits:(int)arg2 size:(double)arg3 {
 	if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig;
-  else return [self fontWithName:fontname size:arg3 traits:arg2];
+  else return [self fontWithName:fontname size:getSize(arg3) traits:arg2];
 }
 + (id)boldSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:boldfontname != nil ? boldfontname : fontname size:arg1];
+  return [self fontWithName:boldfontname != nil ? boldfontname : fontname size:getSize(arg1)];
 }
 + (id)userFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 design:(id)arg3 {
-	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
+	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:getSize(arg1)];
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 {
-	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
+	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:getSize(arg1)];
 }
 + (id)systemFontOfSize:(double)arg1 traits:(int)arg2 {
+<<<<<<< HEAD
   return [self fontWithName:@"-disablefontsize" size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 {
   return [self fontWithName:@"-disablefontsize" size:arg1];
+=======
+  return [self fontWithName:fontname size:getSize(arg1) traits:arg2];
+}
++ (id)systemFontOfSize:(double)arg1 {
+  return [self fontWithName:fontname size:getSize(arg1)];
+>>>>>>> parent of 465f1a9... Fix bug
 }
 + (id)italicSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 + (id)_systemFontsOfSize:(double)arg1 traits:(int)arg2 {
-  return [self fontWithName:fontname size:arg1 traits:arg2];
+  return [self fontWithName:fontname size:getSize(arg1) traits:arg2];
 }
 + (id)_thinSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 + (id)_ultraLightSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 + (id)_lightSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 + (id)_opticalBoldSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 + (id)_opticalSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
+  UIFont *ret = [self fontWithDescriptor:font size:getSize(font.pointSize)];
   return ret;
 }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 compatibleWithTraitCollection:(id)arg2 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
+  UIFont *ret = [self fontWithDescriptor:font size:getSize(font.pointSize)];
   return ret;
 }
 + (id)ib_preferredFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
+  UIFont *ret = [self fontWithDescriptor:font size:getSize(font.pointSize)];
   return ret;
 }
 + (id)defaultFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
-  UIFont *ret = [self fontWithDescriptor:font size:font.pointSize];
+  UIFont *ret = [self fontWithDescriptor:font size:getSize(font.pointSize)];
   return ret;
 }
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(double)arg2 {
   if(checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
-	UIFontDescriptor *d = [UIFontDescriptor fontDescriptorWithName:fontname size:getSize(arg2 != 0 ? arg2 : arg1.pointSize)];
-	if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:getSize(arg2 != 0 ? arg2 : arg1.pointSize)];
+	UIFontDescriptor *d = [UIFontDescriptor fontDescriptorWithName:fontname size:arg2 != 0 ? getSize(arg2) : getSize(arg1.pointSize)];
+	if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? getSize(arg2) : getSize(arg1.pointSize)];
 	return %orig(d, 0);
 }
 + (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithName:fontname size:getSize(arg1)];
 }
 %end
 %hook UIKBRenderFactory
@@ -144,7 +151,7 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 %end
 %hook UIKBTextStyle
 + (id)styleWithFontName:(id)arg1 withFontSize:(double)arg2 {
-  return %orig(fontname, arg2);
+  return %orig(fontname, getSize(arg2));
 }
 %end
 
@@ -183,6 +190,7 @@ id (*orig_systemFontOfSize)(Class, SEL, NSString *, double, int) = nil;
 
 NSString *findBoldFont(NSArray *list, NSString *name) {
 	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@"" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"-Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
