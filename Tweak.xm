@@ -6,6 +6,7 @@ static NSString *boldfontname;
 static BOOL enableSafari;
 static BOOL WebKitImportant;
 static NSNumber *size;
+static NSMutableDictionary *fontMatchDict;
 
 typedef NSString *UIFontTextStyle;
 
@@ -92,23 +93,23 @@ BOOL checkFont(NSString* font) {
   return [self fontWithName:fontname size:arg1 traits:arg2];
 }
 + (id)_thinSystemFontOfSize:(double)arg1 {
-	HBLogDebug(@"1");
+	// HBLogDebug(@"1");
   return [self fontWithName:fontname size:arg1];
 }
 + (id)_ultraLightSystemFontOfSize:(double)arg1 {
-	HBLogDebug(@"2");
+	// HBLogDebug(@"2");
   return [self fontWithName:fontname size:arg1];
 }
 + (id)_lightSystemFontOfSize:(double)arg1 {
-	HBLogDebug(@"3");
+	// HBLogDebug(@"3");
   return [self fontWithName:fontname size:arg1];
 }
 + (id)_opticalBoldSystemFontOfSize:(double)arg1 {
-	HBLogDebug(@"4");
+	// HBLogDebug(@"4");
   return [self fontWithName:fontname size:arg1];
 }
 + (id)_opticalSystemFontOfSize:(double)arg1 {
-	HBLogDebug(@"5");
+	// HBLogDebug(@"5");
   return [self fontWithName:fontname size:arg1];
 }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 {
@@ -185,16 +186,23 @@ BOOL checkFont(NSString* font) {
 %hook WKWebView
 -(void)_didFinishLoadForMainFrame {
   %orig;
-  if(enableSafari && [[UIFont familyNames] containsObject:fontname]) [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\'%@ }'; document.head.appendChild(node);", fontname, (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+  if(enableSafari) {
+		NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
+		if(([identifier isEqualToString:@"com.apple.mobilesafari"] || [identifier isEqualToString:@"com.apple.SafariViewService"]) && fontMatchDict[fontname]) {
+	    NSData *fontFile = [NSData dataWithContentsOfFile:fontMatchDict[fontname]];
+			[self evaluateJavaScript:[NSString stringWithFormat:@"var fontFace = document.createElement('style'); fontFace.innerHTML = '@font-face { font-family: \"A-Font Internal Font Loader\"; src:url(data:font/opentype;base64,%@); } * { font-family: \"A-Font Internal Font Loader\"%@ }'; document.head.appendChild(fontFace);", [fontFile base64Encoding], (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+		}
+		else [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\'%@ }'; document.head.appendChild(node);", fontname, (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+	}
 }
 %end
 
 NSString *findBoldFont(NSArray *list, NSString *name) {
 	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"-Regular" withString:@""];
-	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
 	NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"R$" options:0 error:nil];
 	orig_font = [regex stringByReplacingMatchesInString:orig_font options:0 range:NSMakeRange(0, [orig_font length]) withTemplate:@""];
 	orig_font = [orig_font stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
@@ -222,6 +230,8 @@ NSArray *getFullFontList() {
 
 %ctor {
 	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
+	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
+	NSMutableDictionary *fontMatchTempDict = [NSMutableDictionary new];
 
 	NSFileManager *manager = [NSFileManager defaultManager];
 	NSArray *subpaths = [manager contentsOfDirectoryAtPath:@"/Library/A-Font/" error:NULL];
@@ -235,7 +245,17 @@ NSArray *getFullFontList() {
 			HBLogError(@"Failed to load font: %@", errorDescription);
 			CFRelease(errorDescription);
 		}
+
+		if([identifier isEqualToString:@"com.apple.mobilesafari"] || [identifier isEqualToString:@"com.apple.SafariViewService"]) {
+			NSData *data = [NSData dataWithContentsOfFile:fullPath];
+			CGDataProviderRef fontDataProvider = CGDataProviderCreateWithCFData((CFDataRef)data);
+			CGFontRef cg_font = CGFontCreateWithDataProvider(fontDataProvider);
+    	CTFontRef ct_font = CTFontCreateWithGraphicsFont(cg_font, 36., NULL, NULL);
+			NSString *familyName = (NSString *)CTFontCopyFamilyName(ct_font);
+			fontMatchTempDict[familyName] = fullPath;
+		}
 	}
+	fontMatchDict = [fontMatchTempDict copy];
 
 	NSArray *fullFontList = getFullFontList();
   fontname = plistDict[@"font"];
@@ -252,8 +272,7 @@ NSArray *getFullFontList() {
   enableSafari = [plistDict[@"enableSafari"] boolValue];
   WebKitImportant = [plistDict[@"WebKitImportant"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
-	NSString *identifier = [NSBundle mainBundle].bundleIdentifier;
-  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true) && ![identifier isEqualToString:@"com.apple.SafariViewService"]) {
+  if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true)) {
     %init;
 		float version = [[[UIDevice currentDevice] systemVersion] floatValue];
 		if(version >= 12) %init(iOS12);

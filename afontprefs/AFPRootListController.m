@@ -11,9 +11,9 @@ NSMutableDictionary *prefs;
 NSString *findBoldFont(NSArray *list, NSString *name) {
 	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"" withString:@""];
+	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"Regular" withString:@""];
 	orig_font = [name stringByReplacingOccurrencesOfString:@"-Regular" withString:@""];
-	orig_font = [name stringByReplacingOccurrencesOfString:@" Regular" withString:@""];
 	NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"R$" options:0 error:nil];
 	orig_font = [regex stringByReplacingMatchesInString:orig_font options:0 range:NSMakeRange(0, [orig_font length]) withTemplate:@""];
 	orig_font = [orig_font stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
