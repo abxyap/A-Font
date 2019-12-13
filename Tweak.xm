@@ -240,7 +240,7 @@ NSArray *getFullFontList() {
 		CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
 		if(!CTFontManagerRegisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, &error)) {
 			CFStringRef errorDescription = CFErrorCopyDescription(error);
-			HBLogError(@"Failed to load font: %@", errorDescription);
+			NSLog(@"[A-Font] Failed to load font: %@", errorDescription);
 			CFRelease(errorDescription);
 		}
 
