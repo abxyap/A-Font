@@ -44,6 +44,7 @@ BOOL checkFont(NSString* font) {
 + (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2;
 @end
 
+%group Font
 %hook UIFont
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
 	if([arg1 containsString:@"disableAFont"]) return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2);
@@ -154,6 +155,7 @@ BOOL checkFont(NSString* font) {
   return %orig(fontname, arg2);
 }
 %end
+%end
 
 @interface _UIStatusBarStringView : UILabel
 @property (nonatomic, assign) long long fontStyle;
@@ -177,6 +179,7 @@ BOOL checkFont(NSString* font) {
 %end
 %end
 
+%group WebKit
 @interface WKWebView
 -(void)evaluateJavaScript:(id)arg1 completionHandler:(id)arg2 ;
 @end
@@ -193,6 +196,7 @@ BOOL checkFont(NSString* font) {
 		else [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\'%@ }'; document.head.appendChild(node);", fontname, (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
 	}
 }
+%end
 %end
 
 NSString *findBoldFont(NSArray *list, NSString *name) {
@@ -240,7 +244,7 @@ NSArray *getFullFontList() {
 		CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
 		if(!CTFontManagerRegisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, &error)) {
 			CFStringRef errorDescription = CFErrorCopyDescription(error);
-			NSLog(@"[A-Font] Failed to load font: %@", errorDescription);
+			NSLog(@"[AFont] Failed to load font: %@", errorDescription);
 			CFRelease(errorDescription);
 		}
 
@@ -272,8 +276,10 @@ NSArray *getFullFontList() {
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
   if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true)) {
 		isSpringBoard = [identifier isEqualToString:@"com.apple.springboard"];
-    %init;
+		if([identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.springboard.SBRendererService"]) return;
+    %init(Font);
+    %init(WebKit);
 		float version = [[[UIDevice currentDevice] systemVersion] floatValue];
-		if(version >= 12) %init(iOS12);
+		if(isSpringBoard && version >= 12 && version < 13) %init(iOS12);
   }
 }
