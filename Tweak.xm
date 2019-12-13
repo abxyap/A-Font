@@ -5,6 +5,7 @@ static NSString *fontname;
 static NSString *boldfontname;
 static BOOL enableSafari;
 static BOOL WebKitImportant;
+static BOOL isSpringBoard;
 static NSNumber *size;
 static NSMutableDictionary *fontMatchDict;
 
@@ -45,17 +46,15 @@ BOOL checkFont(NSString* font) {
 
 %hook UIFont
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
-	if([arg1 containsString:@"disableAFont"]) {
-		HBLogInfo(@"disabled... %f", arg2);
-		return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2);
-	}
+	if([arg1 containsString:@"disableAFont"]) return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2);
   if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig(boldfontname, getSize(arg2));
   else return %orig(fontname, getSize(arg2));
 }
 %new
 + (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2 {
-	return [self fontWithName:[NSString stringWithFormat:@"%@disableAFont", arg1] size:arg2];
+	if([arg1 containsString:@"disableAFont"]) return [self fontWithName:arg1 size:arg2];
+	else return [self fontWithName:[NSString stringWithFormat:@"%@disableAFont", arg1] size:arg2];
 }
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
   if(checkFont(arg1)) return %orig;
@@ -69,48 +68,47 @@ BOOL checkFont(NSString* font) {
   return [self fontWithName:fontname size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 design:(id)arg3 {
-	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
+	if(isSpringBoard && ![size isEqual:@1]) return %orig;
+	return [self fontWithNameWithoutAFont:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
 }
 + (id)systemFontOfSize:(double)arg1 weight:(double)arg2 {
-	return [self fontWithName:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
+	if(isSpringBoard && ![size isEqual:@1]) return %orig;
+	return [self fontWithNameWithoutAFont:(arg2 >= 0.2 && boldfontname != nil ? boldfontname : fontname) size:arg1];
 }
 + (UIFont *)systemFontOfSize:(double)arg1 traits:(int)arg2 {
-	return [self fontWithName:fontname size:arg1];
+	if(isSpringBoard && ![size isEqual:@1]) return %orig;
+	return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (UIFont *)systemFontOfSize:(double)arg1 {
-	return [self fontWithName:fontname size:arg1];
+	if(isSpringBoard && ![size isEqual:@1]) return %orig;
+	return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)boldSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:boldfontname != nil ? boldfontname : fontname size:arg1];
+  return [self fontWithNameWithoutAFont:boldfontname != nil ? boldfontname : fontname size:arg1];
 }
 + (id)monospacedDigitSystemFontOfSize:(double)arg1 weight:(double)arg2 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)italicSystemFontOfSize:(double)arg1 {
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)_systemFontsOfSize:(double)arg1 traits:(int)arg2 {
-  return [self fontWithName:fontname size:arg1 traits:arg2];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)_thinSystemFontOfSize:(double)arg1 {
-	// HBLogDebug(@"1");
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)_ultraLightSystemFontOfSize:(double)arg1 {
-	// HBLogDebug(@"2");
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)_lightSystemFontOfSize:(double)arg1 {
-	// HBLogDebug(@"3");
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)_opticalBoldSystemFontOfSize:(double)arg1 {
-	// HBLogDebug(@"4");
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)_opticalSystemFontOfSize:(double)arg1 {
-	// HBLogDebug(@"5");
-  return [self fontWithName:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)preferredFontForTextStyle:(UIFontTextStyle)arg1 {
   UIFontDescriptor *font = [UIFontDescriptor preferredFontDescriptorWithTextStyle:arg1];
@@ -190,7 +188,7 @@ BOOL checkFont(NSString* font) {
 		NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
 		if(([identifier isEqualToString:@"com.apple.mobilesafari"] || [identifier isEqualToString:@"com.apple.SafariViewService"]) && fontMatchDict[fontname]) {
 	    NSData *fontFile = [NSData dataWithContentsOfFile:fontMatchDict[fontname]];
-			[self evaluateJavaScript:[NSString stringWithFormat:@"var fontFace = document.createElement('style'); fontFace.innerHTML = '@font-face { font-family: \"A-Font Internal Font Loader\"; src:url(data:font/opentype;base64,%@); } * { font-family: \"A-Font Internal Font Loader\"%@ }'; document.head.appendChild(fontFace);", [fontFile base64Encoding], (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+			[self evaluateJavaScript:[NSString stringWithFormat:@"var fontFace = document.createElement('style'); fontFace.innerHTML = '@font-face { font-family: \"A-Font Internal Font Loader\"; src:url(data:font/opentype;base64,%@); } * { font-family: \"A-Font Internal Font Loader\"%@ }'; document.head.appendChild(fontFace);", [fontFile base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed], (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
 		}
 		else [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\'%@ }'; document.head.appendChild(node);", fontname, (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
 	}
@@ -273,6 +271,7 @@ NSArray *getFullFontList() {
   WebKitImportant = [plistDict[@"WebKitImportant"] boolValue];
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
   if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true)) {
+		isSpringBoard = [identifier isEqualToString:@"com.apple.springboard"];
     %init;
 		float version = [[[UIDevice currentDevice] systemVersion] floatValue];
 		if(version >= 12) %init(iOS12);
