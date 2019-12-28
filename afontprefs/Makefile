@@ -1,8 +1,6 @@
-ARCHS = arm64 armv7
-OS := $(shell uname)
-ifeq ($(OS),Darwin)
-  ARCHS += arm64e
-endif
+TARGET = iphone:12.2:12.2
+ARCHS = arm64 arm64e
+
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = AFontPrefs
