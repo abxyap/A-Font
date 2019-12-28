@@ -1,5 +1,6 @@
 #include <UIKit/UIKit.h>
 #import <CoreText/CoreText.h>
+#import "headers.h"
 
 static NSString *fontname;
 static NSString *boldfontname;
@@ -50,6 +51,7 @@ BOOL checkFont(NSString* font) {
 	if([arg1 containsString:@"disableAFont"]) return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2);
   if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig(boldfontname, getSize(arg2));
+	if([arg1 containsString:@"Bold"]) return %orig(boldfontname, getSize(arg2));
   else return %orig(fontname, getSize(arg2));
 }
 %new
@@ -179,22 +181,76 @@ BOOL checkFont(NSString* font) {
 %end
 %end
 
+%group SpringBoard
+%hook SpringBoard
+-(void)applicationDidFinishLaunching:(id)application {
+  %orig;
+  [[objc_getClass("NSDistributedNotificationCenter") defaultCenter] addObserver:self selector:@selector(downloadAFont:) name:@"com.rpgfarm.afont.download" object:nil];
+}
+
+%new
+-(void)downloadAFont:(NSNotification *)notification {
+	NSDictionary *array = notification.userInfo;
+	NSArray *files = array[@"files"];
+
+	NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+	queue.maxConcurrentOperationCount = 4;
+
+	NSBlockOperation *completionOperation = [NSBlockOperation blockOperationWithBlock:^{
+    [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+			NSLog(@"[AFont] download file done!");
+    }];
+	}];
+
+	for(NSDictionary *item in files) {
+    NSBlockOperation *operation = [NSBlockOperation blockOperationWithBlock:^{
+			NSURL *url = [NSURL URLWithString:item[@"url"]];
+      NSData *data = [NSData dataWithContentsOfURL:url];
+      NSString *filename = [NSString stringWithFormat:@"/Library/A-Font/%@.%@", item[@"name"], [url pathExtension]];
+			NSLog(@"[AFont] download file %@ %@ %@", item[@"url"], filename, data);
+      [data writeToFile:filename atomically:YES];
+    }];
+    [completionOperation addDependency:operation];
+	}
+
+	[queue addOperations:completionOperation.dependencies waitUntilFinished:NO];
+	[queue addOperation:completionOperation];
+}
+%end
+%end
+
 %group WebKit
-@interface WKWebView
--(void)evaluateJavaScript:(id)arg1 completionHandler:(id)arg2 ;
-@end
+BOOL loaded = false;
 
 %hook WKWebView
 -(void)_didFinishLoadForMainFrame {
   %orig;
-  if(enableSafari) {
-		NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-		if(([identifier isEqualToString:@"com.apple.mobilesafari"] || [identifier isEqualToString:@"com.apple.SafariViewService"]) && fontMatchDict[fontname]) {
-	    NSData *fontFile = [NSData dataWithContentsOfFile:fontMatchDict[fontname]];
-			[self evaluateJavaScript:[NSString stringWithFormat:@"var fontFace = document.createElement('style'); fontFace.innerHTML = '@font-face { font-family: \"A-Font Internal Font Loader\"; src:url(data:font/opentype;base64,%@); } * { font-family: \"A-Font Internal Font Loader\"%@ }'; document.head.appendChild(fontFace);", [fontFile base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed], (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+
+	if([[[self URL] host] isEqualToString:@"a-font.rpgfarm.com"]) {
+		if(!loaded) {
+			[[[self configuration] userContentController] addScriptMessageHandler:self name:@"AFont"];
+			loaded = true;
 		}
-		else [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\'%@ }'; document.head.appendChild(node);", fontname, (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+	} else {
+	  if(enableSafari) {
+			NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
+			if(([identifier isEqualToString:@"com.apple.mobilesafari"] || [identifier isEqualToString:@"com.apple.SafariViewService"]) && fontMatchDict[fontname]) {
+		    NSData *fontFile = [NSData dataWithContentsOfFile:fontMatchDict[fontname]];
+				[self evaluateJavaScript:[NSString stringWithFormat:@"var fontFace = document.createElement('style'); fontFace.innerHTML = '@font-face { font-family: \"A-Font Internal Font Loader\"; src:url(data:font/opentype;base64,%@); } * { font-family: \"A-Font Internal Font Loader\"%@ }'; document.head.appendChild(fontFace);", [fontFile base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed], (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+			}
+			else [self evaluateJavaScript:[NSString stringWithFormat:@"var node = document.createElement('style'); node.innerHTML = '* { font-family: \\'%@\\'%@ }'; document.head.appendChild(node);", fontname, (WebKitImportant ? @" !important" : @"")] completionHandler:nil];
+		}
 	}
+}
+
+
+
+%new
+-(void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
+	NSLog(@"[AFont] message: %@", message.body);
+	NSDictionary *body = message.body;
+	if([body[@"type"] isEqualToString:@"ping"]) [self evaluateJavaScript:@"afontLoaded()" completionHandler:nil];
+	if([body[@"type"] isEqualToString:@"download"]) [[objc_getClass("NSDistributedNotificationCenter") defaultCenter] postNotificationName:@"com.rpgfarm.afont.download" object:nil userInfo:body];
 }
 %end
 %end
@@ -276,9 +332,10 @@ NSArray *getFullFontList() {
   NSArray *fonts = [UIFont fontNamesForFamilyName:fontname];
   if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0 && ([plistDict[@"blacklist"][identifier] isEqual:@1] ? false : true)) {
 		isSpringBoard = [identifier isEqualToString:@"com.apple.springboard"];
-		if([identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.springboard.SBRendererService"]) return;
+		if([identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.springboard.SBRendererService"] || [identifier isEqualToString:@"com.apple.Search.Framework"]) return;
     %init(Font);
     %init(WebKit);
+    %init(SpringBoard);
 		float version = [[[UIDevice currentDevice] systemVersion] floatValue];
 		if(isSpringBoard && version >= 12 && version < 13) %init(iOS12);
   }
