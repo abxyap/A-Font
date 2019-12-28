@@ -76,6 +76,18 @@ NSArray *getFullFontList() {
 		[_boldFontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
 		[specifiers addObject:_boldFontSpecifier];
 		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Blacklist" target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Browse fonts from online" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+			[specifier setIdentifier:@"online"];
+	    specifier->action = @selector(openCredits:);
+			specifier;
+		})];
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Open font folder" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+			[specifier setIdentifier:@"filza"];
+	    specifier->action = @selector(openCredits:);
+			specifier;
+		})];
 
 
 		[specifiers addObject:({
@@ -170,7 +182,11 @@ NSArray *getFullFontList() {
 
 -(void)openCredits:(PSSpecifier *)specifier {
 	NSString *value = specifier.identifier;
-	if([value isEqualToString:@"BawAppie"]) [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://twitter.com/BawAppie"] options:@{} completionHandler:nil];
+	NSString *loc;
+	if([value isEqualToString:@"BawAppie"]) loc = @"https://twitter.com/BawAppie";
+	if([value isEqualToString:@"filza"]) loc = @"filza://Library/A-Font";
+	if([value isEqualToString:@"online"]) loc = @"https://a-font.rpgfarm.com";
+	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:loc] options:@{} completionHandler:nil];
 }
 -(void)getPreference {
 	if(![[NSFileManager defaultManager] fileExistsAtPath:PREFERENCE_IDENTIFIER]) prefs = [[NSMutableDictionary alloc] init];
