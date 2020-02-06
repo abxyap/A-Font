@@ -223,14 +223,15 @@ BOOL checkFont(NSString* font) {
 BOOL loaded = false;
 
 %hook WKWebView
+%property (assign) BOOL loaded;
 -(void)_didFinishLoadForMainFrame {
   %orig;
-
 	if([[[self URL] host] isEqualToString:@"a-font.rpgfarm.com"]) {
-		if(!loaded) {
-			[[[self configuration] userContentController] addScriptMessageHandler:self name:@"AFont"];
-			loaded = true;
+		if(loaded) {
+			[[[self configuration] userContentController] removeScriptMessageHandlerForName:@"AFont"];
 		}
+		[[[self configuration] userContentController] addScriptMessageHandler:self name:@"AFont"];
+		loaded = true;
 	} else {
 	  if(enableSafari) {
 			NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];

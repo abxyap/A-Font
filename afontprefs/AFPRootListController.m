@@ -183,10 +183,22 @@ NSArray *getFullFontList() {
 -(void)openCredits:(PSSpecifier *)specifier {
 	NSString *value = specifier.identifier;
 	NSString *loc;
-	if([value isEqualToString:@"BawAppie"]) loc = @"https://twitter.com/BawAppie";
-	if([value isEqualToString:@"filza"]) loc = @"filza://Library/A-Font";
-	if([value isEqualToString:@"online"]) loc = @"https://a-font.rpgfarm.com";
-	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:loc] options:@{} completionHandler:nil];
+	NSString *gloc;
+	if([value isEqualToString:@"BawAppie"]) {
+		loc = @"https://twitter.com/BawAppie";
+		gloc = @"googlechromes://twitter.com/BawAppie";
+	}
+	if([value isEqualToString:@"filza"]) {
+		loc = @"filza://view/Library/A-Font/";
+		gloc = @"filza://view/Library/A-Font/";
+	}
+	if([value isEqualToString:@"online"]) {
+		loc = @"https://a-font.rpgfarm.com";
+		gloc = @"googlechromes://a-font.rpgfarm.com";
+	}
+	UIApplication *app = [UIApplication sharedApplication];
+	if([app canOpenURL:[NSURL URLWithString:@"googlechromes://"]] && gloc) [app openURL:[NSURL URLWithString:gloc] options:@{} completionHandler:nil];
+	else [app openURL:[NSURL URLWithString:loc] options:@{} completionHandler:nil];
 }
 -(void)getPreference {
 	if(![[NSFileManager defaultManager] fileExistsAtPath:PREFERENCE_IDENTIFIER]) prefs = [[NSMutableDictionary alloc] init];
