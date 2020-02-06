@@ -35,8 +35,12 @@ BOOL checkFont(NSString* font) {
   if(
     Search(font, @"icon")
     || Search(font, @"glyph")
+    || Search(font, @"assets")
     || Search(font, @"wundercon")
+    || Search(font, @"fontawesome")
+    || Search(font, @"fontisto")
     || Search(font, @"GoogleSans-Regular")
+    || [font isEqualToString:@"custom"]
   ) return true;
   else return false;
 }
