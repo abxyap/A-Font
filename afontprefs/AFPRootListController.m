@@ -1,12 +1,15 @@
 #include "AFPRootListController.h"
 #include "AFPBlackListController.h"
 #import <spawn.h>
+#import <objc/runtime.h>
 #define PREFERENCE_IDENTIFIER @"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"
 NSMutableDictionary *prefs;
 
 @interface UIApplication (Private)
 - (void)openURL:(NSURL *)url options:(NSDictionary *)options completionHandler:(void (^)(BOOL success))completion;
 @end
+
+#define LocalizeString(key) [[NSBundle bundleWithPath:@"/Library/PreferenceBundles/AFontPrefs.bundle"] localizedStringForKey:key value:key table:@"prefs"]
 
 NSString *findBoldFont(NSArray *list, NSString *name) {
 	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
@@ -39,6 +42,32 @@ NSArray *getFullFontList() {
 	return fullList;
 }
 
+NSString *findAppDocumentPath(NSString *appIdentifier) {
+	NSString *path = [[[objc_getClass("LSApplicationProxy") applicationProxyForIdentifier:appIdentifier] dataContainerURL] path];
+
+	if([path hasPrefix:@"/private/var"]) {
+		NSMutableArray *pathComponents = [NSMutableArray arrayWithArray:[path pathComponents]];
+		[pathComponents removeObjectAtIndex:1];
+		path = [NSString pathWithComponents:pathComponents];
+	}
+
+	return path;
+}
+
+BOOL clearDir(NSString *dir) {
+	BOOL file;
+	if([dir hasSuffix:@"/"]) file = NO;
+	else file = YES;
+	NSFileManager *manager = [NSFileManager defaultManager];
+	if(file) return [manager removeItemAtPath:dir error:nil];
+
+	NSArray *subpaths = [manager contentsOfDirectoryAtPath:dir error:NULL];
+	for(NSString *key in subpaths) {
+		if(![manager removeItemAtPath:[NSString stringWithFormat:@"%@/%@", dir, key] error:nil]) return NO;
+	}
+	return YES;
+}
+
 @implementation AFPRootListController
 
 - (NSArray *)specifiers {
@@ -46,44 +75,49 @@ NSArray *getFullFontList() {
 		[self getPreference];
 		NSMutableArray *specifiers = [[NSMutableArray alloc] init];
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Credits" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
-			[specifier.properties setValue:@"and JBI, Asamo, r/jailbreakdevelopers, r/Jailbreak, and.. You!" forKey:@"footerText"];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Credits") target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
 			specifier;
 		})];
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"@BawAppie (Developer)" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"BawAppie"];
-	    specifier->action = @selector(openCredits:);
+	    	specifier->action = @selector(openCredits:);
+			specifier;
+		})];
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"LICENSE" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+			[specifier setIdentifier:@"license"];
+	    	specifier->action = @selector(openCredits:);
 			specifier;
 		})];
 
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"A-Font Settings" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
-			[specifier.properties setValue:@"A-Font automatically load fonts in /Library/A-Font/. You can also load the font using the profile." forKey:@"footerText"];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"A-Font Settings") target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+			[specifier.properties setValue:LocalizeString(@"A-Font will load fonts from /Library/A-Font/. If you added a new font, you need to restart the settings app or SpringBoard.") forKey:@"footerText"];
 			specifier;
 		})];
 		[specifiers addObject:({
-				PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+				PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Enable") target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
 				[specifier.properties setValue:@"isEnabled" forKey:@"displayIdentifier"];
 			specifier;
 		})];
-		PSSpecifier *_fontSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Font" target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
+		PSSpecifier *_fontSpecifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Font") target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
 		[specifiers addObject:_fontSpecifier];
-		PSSpecifier *_boldFontSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Bold Font" target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
+		PSSpecifier *_boldFontSpecifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Bold Font") target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
 		[_boldFontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_boldFontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
 		[specifiers addObject:_boldFontSpecifier];
-		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Blacklist" target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
+		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Blacklist") target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Browse fonts from online" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Browse fonts from online") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"online"];
 	    specifier->action = @selector(openCredits:);
 			specifier;
 		})];
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Open font folder" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Open font folder") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"filza"];
 	    specifier->action = @selector(openCredits:);
 			specifier;
@@ -91,8 +125,8 @@ NSArray *getFullFontList() {
 
 
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Font Size" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
-			[specifier.properties setValue:@"Don't change font size unless you have a problem with A-Font." forKey:@"footerText"];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Font Size") target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+			[specifier.properties setValue:LocalizeString(@"Font Size feature can cause unexpected problems. If this is not needed, keep 1.0") forKey:@"footerText"];
 			specifier;
 		})];
     [specifiers addObject:({
@@ -109,25 +143,30 @@ NSArray *getFullFontList() {
 
 
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"WebKit Options" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
-			[specifier.properties setValue:@"If this option is enabled, A-Font injects CSS into WebKit. Some fonts are not available in Safari." forKey:@"footerText"];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"WebKit Options") target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+			[specifier.properties setValue:LocalizeString(@"If this option is enabled, A-Font injects CSS into WebKit. Some fonts are not available in Safari.") forKey:@"footerText"];
 			specifier;
 		})];
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Enable in WebKit" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Enable in WebKit") target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
 			[specifier.properties setValue:@"enableSafari" forKey:@"displayIdentifier"];
 			specifier;
 		})];
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Use !important tag" target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Use !important tag") target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
 			[specifier.properties setValue:@"WebKitImportant" forKey:@"displayIdentifier"];
 			specifier;
 		})];
 
-		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:@"Recommended" target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil]];
+		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Recommended") target:self set:nil get:nil detail:nil cell:PSGroupCell edit:nil]];
 		[specifiers addObject:({
-			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Restart SpringBoard" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
-	    specifier->action = @selector(Respring);
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Clear font cache and restart SpringBoard") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+	    	specifier->action = @selector(cacheRespring);
+			specifier;
+		})];
+		[specifiers addObject:({
+			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Restart SpringBoard") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+	    	specifier->action = @selector(Respring);
 			specifier;
 		})];
 
@@ -155,7 +194,7 @@ NSArray *getFullFontList() {
 
 - (void)setFont:(NSString *)fontName forSpecifier:(PSSpecifier*)specifier {
 	if([fontName hasPrefix:@"Automatic ("]) fontName = @"Automatic";
-	if([specifier.name isEqualToString:@"Bold Font"]) prefs[@"boldfont"] = fontName;
+	if([specifier.name isEqualToString:LocalizeString(@"Bold Font")]) prefs[@"boldfont"] = fontName;
 	else prefs[@"font"] = fontName;
 	[[prefs copy] writeToFile:PREFERENCE_IDENTIFIER atomically:FALSE];
 }
@@ -164,12 +203,12 @@ NSArray *getFullFontList() {
 	NSString *boldfont;
 	if(!prefs[@"font"]) boldfont = @"Please select font.";
 	else boldfont = findBoldFont(fullList, prefs[@"font"]);
-	if([specifier.name isEqualToString:@"Bold Font"]) return (![prefs[@"boldfont"] isEqualToString:@"Automatic"] ? prefs[@"boldfont"] : [NSString stringWithFormat:@"Automatic (%@)", boldfont]);
+	if([specifier.name isEqualToString:LocalizeString(@"Bold Font")]) return (![prefs[@"boldfont"] isEqualToString:@"Automatic"] ? prefs[@"boldfont"] : [NSString stringWithFormat:@"Automatic (%@)", boldfont]);
 	else return prefs[@"font"];
 }
 - (NSArray *)valuesSource:(PSSpecifier *)target {
 	NSMutableArray *dic = [[[UIFont familyNames] sortedArrayUsingSelector:@selector(compare:)] mutableCopy];
-	if(![target.name isEqualToString:@"Font"]) {
+	if(![target.name isEqualToString:LocalizeString(@"Font")]) {
 		NSArray *fullList = getFullFontList();
 		dic = [[fullList sortedArrayUsingSelector:@selector(compare:)] mutableCopy];
 		NSString *boldfont;
@@ -196,6 +235,10 @@ NSArray *getFullFontList() {
 		loc = @"https://a-font.rpgfarm.com";
 		gloc = @"googlechromes://a-font.rpgfarm.com";
 	}
+	if([value isEqualToString:@"license"]) {
+		loc = @"https://gitlab.com/Baw-Appie/A-Font/-/blob/master/LICENSE";
+		gloc = @"googlechromes://gitlab.com/Baw-Appie/A-Font/-/blob/master/LICENSE";
+	}
 	UIApplication *app = [UIApplication sharedApplication];
 	if([app canOpenURL:[NSURL URLWithString:@"googlechromes://"]] && gloc) [app openURL:[NSURL URLWithString:gloc] options:@{} completionHandler:nil];
 	else [app openURL:[NSURL URLWithString:loc] options:@{} completionHandler:nil];
@@ -206,7 +249,38 @@ NSArray *getFullFontList() {
 }
 - (void)Respring {
 	pid_t pid;
-  const char* args[] = {"killall", "backboardd", NULL};
-  posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args, NULL);
+	const char* args[] = {"killall", "backboardd", NULL};
+	posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args, NULL);
+}
+- (void)cacheRespring {
+	NSString *phoneDir = findAppDocumentPath(@"com.apple.mobilephone");
+	NSString *inCallDir = findAppDocumentPath(@"com.apple.InCallService");
+
+	NSArray *dir = @[
+		@"/var/mobile/Library/Caches/com.apple.keyboards/",
+		@"/var/mobile/Library/Caches/TelephonyUI-7/",
+		@"/var/mobile/Library/Caches/com.apple.UIStatusBar/",
+		@"/var/mobile/Library/SMS/com.apple.messages.geometrycache_v3.plist",
+		@"/Library/Caches/TelephonyUI-7/",
+		[NSString stringWithFormat:@"%@/Library/Caches/TelephonyUI-7/", phoneDir],
+		[NSString stringWithFormat:@"%@/Library/Caches/TelephonyUI-7/", inCallDir]
+	];
+
+	NSMutableString *dirStr = [NSMutableString string];
+	for(NSString* key in dir){
+	    if([dirStr length] > 0) [dirStr appendString:@"\n"];
+	    [dirStr appendString:key];
+	}
+
+	UIAlertController *alert = [UIAlertController alertControllerWithTitle:LocalizeString(@"Clear font cache and restart SpringBoard") message:[NSString stringWithFormat:@"%@\n\n%@", LocalizeString(@"A-Font will delete the following files and restart Springboard.Are you sure?"), dirStr] preferredStyle:UIAlertControllerStyleAlert];
+	[alert addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Cancel") style:UIAlertActionStyleCancel handler:^(UIAlertAction * action) {
+	}]];
+	[alert addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Clear cache") style:UIAlertActionStyleDestructive handler:^(UIAlertAction * action) {
+		for(NSString* key in dir) clearDir(key);
+		pid_t pid;
+		const char* args[] = {"killall", "backboardd", NULL};
+		posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args, NULL);
+	}]];
+	[self presentViewController:alert animated:YES completion:nil];
 }
 @end
