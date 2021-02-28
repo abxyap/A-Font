@@ -98,7 +98,10 @@ static UIFont *defaultFont;
 -(void)drawRect:(CGRect)arg1 {
 	// if(self.isAFontApplied) return %orig;
 	UIFont *ret = self.font;
-	if([ret respondsToSelector:@selector(isInitializedWithCoder)] && !ret.isInitializedWithCoder) return %orig;
+	if(ret == nil) return %orig;
+	if(![ret respondsToSelector:@selector(isInitializedWithCoder)]) return %orig;
+	if(![ret isInitializedWithCoder]) return %orig;
+	// return %orig;
 	if(ret.fontName != defaultFont.fontName && (boldfontname && ret.fontName != boldfontname)) {
 		NSMutableAttributedString *attributedString = [self.attributedText mutableCopy];
 		[attributedString setFontFace];
@@ -390,6 +393,7 @@ NSArray *getFullFontList() {
 }
 
 %ctor {
+	if(!objc_getClass("UIFont")) return;
 	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
 	identifier = [NSBundle mainBundle].bundleIdentifier;
 	NSMutableDictionary *fontMatchTempDict = [NSMutableDictionary new];

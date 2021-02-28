@@ -101,6 +101,11 @@ BOOL clearDir(NSString *dir) {
 				[specifier.properties setValue:@"isEnabled" forKey:@"displayIdentifier"];
 			specifier;
 		})];
+		[specifiers addObject:({
+				PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Enable UILabel Hook") target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+				[specifier.properties setValue:@"useUILabelHook" forKey:@"displayIdentifier"];
+			specifier;
+		})];
 		PSSpecifier *_fontSpecifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Font") target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
@@ -110,16 +115,18 @@ BOOL clearDir(NSString *dir) {
 		[_boldFontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
 		[specifiers addObject:_boldFontSpecifier];
 		[specifiers addObject:[PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Blacklist") target:nil set:nil get:nil detail:[AFPBlackListController class] cell:PSLinkListCell edit:nil]];
+
+		// [specifiers addObject:[PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Browse fonts from online") target:nil set:nil get:nil detail:[AFPBrowseController class] cell:PSLinkListCell edit:nil]];
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Browse fonts from online") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"online"];
-	    specifier->action = @selector(openCredits:);
+	   		 specifier->action = @selector(openCredits:);
 			specifier;
 		})];
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Open font folder") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"filza"];
-	    specifier->action = @selector(openCredits:);
+	    	specifier->action = @selector(openCredits:);
 			specifier;
 		})];
 
