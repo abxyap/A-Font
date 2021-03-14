@@ -222,11 +222,14 @@ static UIFont *defaultFont;
 }
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(CGFloat)arg2 {
 	if(arg1.fontAttributes && checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
+	UIFont *ret = %orig;
 	NSMutableDictionary *attributes = [arg1.fontAttributes mutableCopy];
 	attributes[@"NSCTFontUIUsageAttribute"] = nil;
+	attributes[@"CTFontLegibilityWeightAttribute"] = nil;
+	attributes[@"NSCTFontSizeCategoryAttribute"] = nil;
 	attributes[@"NSFontNameAttribute"] = fontname;
 	UIFontDescriptor *d = [[UIFontDescriptor fontDescriptorWithFontAttributes:attributes] fontDescriptorWithSize:arg2 != 0 ? arg2 : arg1.pointSize];
-	if(boldfontname && (arg1.symbolicTraits & UIFontDescriptorTraitBold)) [d fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
+	if(boldfontname && (ret.fontDescriptor.symbolicTraits & UIFontDescriptorTraitBold)) d = [d fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
 	return %orig(d, 0);
 }
 +(id)fontWithMarkupDescription:(NSString*)markupDescription {
