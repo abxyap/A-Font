@@ -266,11 +266,14 @@ BOOL clearDir(NSString *dir) {
 	NSArray *dir = @[
 		@"/var/mobile/Library/Caches/com.apple.keyboards/",
 		@"/var/mobile/Library/Caches/TelephonyUI-7/",
+		@"/var/mobile/Library/Caches/TelephonyUI-8/"
 		@"/var/mobile/Library/Caches/com.apple.UIStatusBar/",
 		@"/var/mobile/Library/SMS/com.apple.messages.geometrycache_v3.plist",
 		@"/Library/Caches/TelephonyUI-7/",
 		[NSString stringWithFormat:@"%@/Library/Caches/TelephonyUI-7/", phoneDir],
-		[NSString stringWithFormat:@"%@/Library/Caches/TelephonyUI-7/", inCallDir]
+		[NSString stringWithFormat:@"%@/Library/Caches/TelephonyUI-7/", inCallDir],
+		[NSString stringWithFormat:@"%@/Library/Caches/TelephonyUI-8/", phoneDir],
+		[NSString stringWithFormat:@"%@/Library/Caches/TelephonyUI-8/", inCallDir]
 	];
 
 	NSMutableString *dirStr = [NSMutableString string];
