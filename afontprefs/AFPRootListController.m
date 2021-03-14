@@ -101,11 +101,11 @@ BOOL clearDir(NSString *dir) {
 				[specifier.properties setValue:@"isEnabled" forKey:@"displayIdentifier"];
 			specifier;
 		})];
-		[specifiers addObject:({
-				PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Enable UILabel Hook") target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
-				[specifier.properties setValue:@"useUILabelHook" forKey:@"displayIdentifier"];
-			specifier;
-		})];
+		// [specifiers addObject:({
+		// 		PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Enable UILabel Hook") target:self set:@selector(setSwitch:forSpecifier:) get:@selector(getSwitch:) detail:nil cell:PSSwitchCell edit:nil];
+		// 		[specifier.properties setValue:@"useUILabelHook" forKey:@"displayIdentifier"];
+		// 	specifier;
+		// })];
 		PSSpecifier *_fontSpecifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Font") target:self set:@selector(setFont:forSpecifier:) get:@selector(getFont:) detail:[PSListItemsController class] cell:PSLinkListCell edit:nil];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"valuesDataSource"];
 		[_fontSpecifier.properties setValue:@"valuesSource:" forKey:@"titlesDataSource"];
