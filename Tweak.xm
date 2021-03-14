@@ -95,30 +95,41 @@ static UIFont *defaultFont;
 
 %group UILabel
 %hook UILabel
-// %property BOOL isAFontApplied;
--(void)drawRect:(CGRect)arg1 {
-	// if(self.isAFontApplied) return %orig;
-	UIFont *ret = self.font;
-	if(ret == nil) return %orig;
-	if(![ret respondsToSelector:@selector(isInitializedWithCoder)]) return %orig;
-	if(![ret isInitializedWithCoder]) return %orig;
-	// return %orig;
-	if(ret.fontName != defaultFont.fontName && (boldfontname && ret.fontName != boldfontname)) {
-		NSMutableAttributedString *attributedString = [self.attributedText mutableCopy];
-		[attributedString setFontFace];
-		if(attributedString != nil) { 
-			self.attributedText = attributedString;
-			// self.isAFontApplied = true;
-			self.adjustsFontSizeToFitWidth = true;
-		}
-	}
-	return %orig;
+// // %property BOOL isAFontApplied;
+// -(void)drawRect:(CGRect)arg1 {
+// 	// if(self.isAFontApplied) return %orig;
+// 	UIFont *ret = self.font;
+// 	if(ret == nil) return %orig;
+// 	if(![ret respondsToSelector:@selector(isInitializedWithCoder)]) return %orig;
+// 	if(![ret isInitializedWithCoder]) return %orig;
+// 	// return %orig;
+// 	if(ret.fontName != defaultFont.fontName && (boldfontname && ret.fontName != boldfontname)) {
+// 		NSMutableAttributedString *attributedString = [self.attributedText mutableCopy];
+// 		[attributedString setFontFace];
+// 		if(attributedString != nil) { 
+// 			self.attributedText = attributedString;
+// 			// self.isAFontApplied = true;
+// 			self.adjustsFontSizeToFitWidth = true;
+// 		}
+// 	}
+// 	return %orig;
+// }
+-(void)layerWillDraw:(id)arg1{
+	self.font = [UIFont fontWithName:fontname size:[self.font pointSize]];
+	%orig;
 }
 %end
 %end
 
 
 %group Font
+%hook UIFontDescriptor
+- (id)fontDescriptorWithSymbolicTraits:(unsigned int)arg1 {
+	id orig = %orig;
+	if(orig == nil) return [UIFontDescriptor fontDescriptorWithName:fontname size:self.pointSize];
+	return orig;
+}
+%end
 %hook UIFont
 %property BOOL isInitializedWithCoder;
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
@@ -446,7 +457,7 @@ NSArray *getFullFontList() {
 	if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0) {
 		isSpringBoard = [identifier isEqualToString:@"com.apple.springboard"];
 		defaultFont = [[UIFont fontWithName:fontname size:10] copy];
-		if([identifier isEqualToString:@"com.apple.calculator"] && 0) {%init(UILabel); return;}
+		if([identifier isEqualToString:@"com.apple.calculator"]) {%init(UILabel); return;}
     %init(Font);
     %init(WebKit);
     %init(SpringBoard);
