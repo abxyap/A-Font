@@ -40,6 +40,7 @@ BOOL checkFont(NSString* font) {
 		|| Search(font, @"fontawesome")
 		|| Search(font, @"fontisto")
 		|| Search(font, @"GoogleSans-Regular")
+		|| [font isEqualToString:@"kb"]
 		|| [font isEqualToString:@"custom"]
 		|| [font isEqualToString:fontname]
 		|| (boldfontname && [font isEqualToString:boldfontname])
@@ -209,19 +210,22 @@ static UIFont *defaultFont;
   return ret;
 }
 + (UIFont *)fontWithDescriptor:(UIFontDescriptor *)arg1 size:(CGFloat)arg2 {
-	if(checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
-	UIFontDescriptor *d = [UIFontDescriptor fontDescriptorWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
-	if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? arg2 : arg1.pointSize];
+	if(arg1.fontAttributes && checkFont(arg1.fontAttributes[@"NSFontNameAttribute"])) return %orig;
+	NSMutableDictionary *attributes = [arg1.fontAttributes mutableCopy];
+	attributes[@"NSCTFontUIUsageAttribute"] = nil;
+	attributes[@"NSFontNameAttribute"] = fontname;
+	UIFontDescriptor *d = [[UIFontDescriptor fontDescriptorWithFontAttributes:attributes] fontDescriptorWithSize:arg2 != 0 ? arg2 : arg1.pointSize];
+	if(boldfontname && (arg1.symbolicTraits & UIFontDescriptorTraitBold)) [d fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
 	return %orig(d, 0);
-}
--(id)initWithCoder:(id)arg1 {
-	UIFont *ret = %orig;
-	ret.isInitializedWithCoder = true;
-	return ret;
 }
 +(id)fontWithMarkupDescription:(NSString*)markupDescription {
 	UIFont *ret = %orig;
 	return [self fontWithName:fontname size:ret.pointSize];
+}
+-(id)initWithCoder:(id)arg1 {
+	UIFont *ret = %orig;
+	if(boldfontname && (ret.fontDescriptor.symbolicTraits & UIFontDescriptorTraitBold)) return [ret initWithName:boldfontname size:ret.pointSize];
+	return [ret initWithName:fontname size:ret.pointSize];
 }
 %end
 %hook SBFLockScreenDateView
@@ -442,15 +446,10 @@ NSArray *getFullFontList() {
 	if([plistDict[@"isEnabled"] boolValue] && fontname != nil && [fonts count] != 0) {
 		isSpringBoard = [identifier isEqualToString:@"com.apple.springboard"];
 		defaultFont = [[UIFont fontWithName:fontname size:10] copy];
-		BOOL useUILabelHook = false;
-		if(![identifier hasPrefix:@"com.apple."]) useUILabelHook = true;
-		if([identifier isEqualToString:@"com.apple.calculator"]) useUILabelHook = true;
-		if(![plistDict[@"useUILabelHook"] isEqual:@1]) useUILabelHook = false;
-	    if(useUILabelHook) %init(UILabel);
-		if([identifier isEqualToString:@"com.apple.calculator"]) return;
-	    %init(Font);
-	    %init(WebKit);
-	    %init(SpringBoard);
+		if([identifier isEqualToString:@"com.apple.calculator"] && 0) {%init(UILabel); return;}
+    %init(Font);
+    %init(WebKit);
+    %init(SpringBoard);
 		float version = [[[UIDevice currentDevice] systemVersion] floatValue];
 		if(isSpringBoard && version >= 12 && version < 13) %init(iOS12);
   }
