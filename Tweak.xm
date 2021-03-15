@@ -431,7 +431,7 @@ NSArray *getFullFontList() {
 			CFRelease(errorDescription);
 		}
 
-		if(![identifier hasPrefix:@"com.apple."] || [identifier isEqualToString:@"com.apple.mobilesafari"] || [identifier isEqualToString:@"com.apple.SafariViewService"]) {
+		if(![identifier hasPrefix:@"com.apple."] || [identifier isEqualToString:@"com.apple.mobilesafari"] || [identifier isEqualToString:@"com.apple.SafariViewService"] || [identifier isEqualToString:@"com.apple.WebContent.xpc"]) {
 			NSData *data = [NSData dataWithContentsOfFile:fullPath];
 			CGDataProviderRef fontDataProvider = CGDataProviderCreateWithCFData((CFDataRef)data);
 			CGFontRef cg_font = CGFontCreateWithDataProvider(fontDataProvider);
