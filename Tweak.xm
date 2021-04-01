@@ -445,6 +445,9 @@ NSArray *getFullFontList() {
 			CGFontRef cg_font = CGFontCreateWithDataProvider(fontDataProvider);
     		CTFontRef ct_font = CTFontCreateWithGraphicsFont(cg_font, 36., NULL, NULL);
 			NSString *familyName = (NSString *)CTFontCopyFamilyName(ct_font);
+			if(familyName != fontname && boldfontname ? (familyName != boldfontname) : true) {
+				CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
+			}
 			fontMatchTempDict[familyName] = fullPath;
 		}
 	}
