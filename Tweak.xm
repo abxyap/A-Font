@@ -232,7 +232,7 @@ static UIFont *defaultFont;
 	if(boldfontname && (ret.fontDescriptor.symbolicTraits & UIFontDescriptorTraitBold)) d = [d fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
 	UIFont *result = %orig(d, 0);
 
-	if(result.fontName != fontname && boldfontname ? (result.fontName != boldfontname) : true) {
+	if(![result.fontName isEqualToString:defaultFont.fontName] && (boldfontname ? ![result.fontName isEqualToString:boldfontname] : true)) {
 		// if new method is not working, use old method.
 		d = [UIFontDescriptor fontDescriptorWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
 		if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? arg2 : arg1.pointSize];
@@ -445,9 +445,6 @@ NSArray *getFullFontList() {
 			CGFontRef cg_font = CGFontCreateWithDataProvider(fontDataProvider);
     		CTFontRef ct_font = CTFontCreateWithGraphicsFont(cg_font, 36., NULL, NULL);
 			NSString *familyName = (NSString *)CTFontCopyFamilyName(ct_font);
-			if(familyName != fontname && boldfontname ? (familyName != boldfontname) : true) {
-				CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
-			}
 			fontMatchTempDict[familyName] = fullPath;
 		}
 	}
