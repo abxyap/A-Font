@@ -230,7 +230,15 @@ static UIFont *defaultFont;
 	attributes[@"NSFontNameAttribute"] = fontname;
 	UIFontDescriptor *d = [[UIFontDescriptor fontDescriptorWithFontAttributes:attributes] fontDescriptorWithSize:arg2 != 0 ? arg2 : arg1.pointSize];
 	if(boldfontname && (ret.fontDescriptor.symbolicTraits & UIFontDescriptorTraitBold)) d = [d fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
-	return %orig(d, 0);
+	UIFont *result = %orig(d, 0);
+
+	if(result.fontName != fontname && boldfontname ? (result.fontName != boldfontname) : true) {
+		// if new method is not working, use old method.
+		d = [UIFontDescriptor fontDescriptorWithName:fontname size:arg2 != 0 ? arg2 : arg1.pointSize];
+		if(arg1.symbolicTraits & UIFontDescriptorTraitBold && boldfontname) d = [UIFontDescriptor fontDescriptorWithName:boldfontname size:arg2 != 0 ? arg2 : arg1.pointSize];
+		return %orig(d, 0);
+	}
+	return result;
 }
 +(id)fontWithMarkupDescription:(NSString*)markupDescription {
 	UIFont *ret = %orig;
