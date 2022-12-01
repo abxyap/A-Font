@@ -11,6 +11,8 @@ static NSNumber *size;
 static NSMutableDictionary *fontMatchDict;
 static NSString *identifier;
 
+static NSString *AFontPath;
+
 typedef NSString *UIFontTextStyle;
 
 @interface UIFont (Private)
@@ -24,22 +26,17 @@ double getSize(double orig_size) {
 	return ceil(orig_size*[size doubleValue]);
 }
 
-BOOL Search(NSString* path, NSString* search){
-	if([path rangeOfString:search options:NSCaseInsensitiveSearch].location != NSNotFound) {
-    return YES;
-  }
-	else return NO;
-}
-
 BOOL checkFont(NSString* font) {
 	if(font == nil) return false;
-	if(Search(font, @"icon")
-		|| Search(font, @"glyph")
-		|| Search(font, @"assets")
-		|| Search(font, @"wundercon")
-		|| Search(font, @"fontawesome")
-		|| Search(font, @"fontisto")
-		|| Search(font, @"GoogleSans-Regular")
+	NSString *lowercase = [font lowercaseString];
+	if([lowercase containsString:@"icon"]
+		|| [lowercase containsString:@"glyph"]
+		|| [lowercase containsString:@"assets"]
+		|| [lowercase containsString:@"wundercon"]
+		|| [lowercase containsString:@"fontawesome"]
+		|| [lowercase containsString:@"fontisto"]
+		|| [font containsString:@"GoogleSans-Regular"]
+		|| [font containsString:@"Credit Card"] // Wise (formerly TransferWise)
 		|| [font isEqualToString:@"kb"]
 		|| [font isEqualToString:@"custom"]
 		|| [font isEqualToString:fontname]
@@ -50,9 +47,7 @@ BOOL checkFont(NSString* font) {
 
 BOOL isBoldFont(NSString* font) {
 	if(font == nil) return false;
-	if(([[font uppercaseString] containsString:@"BOLD"] || [[font uppercaseString] hasSuffix:@"B"])
-		
-	) return true;
+	if(([[font uppercaseString] containsString:@"BOLD"] || [[font uppercaseString] hasSuffix:@"B"])) return true;
 	else return false;
 }
 
@@ -427,10 +422,12 @@ NSArray *getFullFontList() {
 	if([plistDict[@"blacklist"][identifier] isEqual:@1]) return;
 
 	NSFileManager *manager = [NSFileManager defaultManager];
-	NSArray *subpaths = [manager contentsOfDirectoryAtPath:@"/Library/A-Font/" error:NULL];
-	[UIFont familyNames];
+	AFontPath = [manager fileExistsAtPath:@"/var/Liy/"] ? @"/var/Liy/Library/A-Font/" : @"/Library/A-Font/";
+
+	NSArray *subpaths = [manager contentsOfDirectoryAtPath:AFontPath error:NULL];
+	// [UIFont familyNames];
 	for(NSString *key in subpaths) {
-		NSString *fullPath = [NSString stringWithFormat:@"/Library/A-Font/%@", key];
+		NSString *fullPath = [NSString stringWithFormat:@"%@%@", AFontPath, key];
 		CFErrorRef error;
 		CTFontManagerUnregisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, nil);
 		if(!CTFontManagerRegisterFontsForURL((CFURLRef)[NSURL fileURLWithPath:fullPath], kCTFontManagerScopeNone, &error)) {
