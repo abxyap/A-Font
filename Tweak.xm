@@ -414,9 +414,10 @@ NSArray *getFullFontList() {
 }
 
 %ctor {
+	if(!objc_getClass("UIFont")) return;
 	identifier = [NSBundle mainBundle].bundleIdentifier;
 	if([identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.springboard.SBRendererService"] || [identifier isEqualToString:@"com.apple.Search.Framework"]) return;
-	if(!objc_getClass("UIFont")) return;
+	
 	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
 	NSMutableDictionary *fontMatchTempDict = [NSMutableDictionary new];
 	if([plistDict[@"blacklist"][identifier] isEqual:@1]) return;

@@ -4,6 +4,7 @@
 #import <objc/runtime.h>
 #define PREFERENCE_IDENTIFIER @"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"
 NSMutableDictionary *prefs;
+NSString *AFontPath;
 
 @interface UIApplication (Private)
 - (void)openURL:(NSURL *)url options:(NSDictionary *)options completionHandler:(void (^)(BOOL success))completion;
@@ -81,13 +82,13 @@ BOOL clearDir(NSString *dir) {
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"@BawAppie (Developer)" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"BawAppie"];
-	    	specifier->action = @selector(openCredits:);
+	    	specifier->action = @selector(openLinks:);
 			specifier;
 		})];
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"LICENSE" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"license"];
-	    	specifier->action = @selector(openCredits:);
+	    	specifier->action = @selector(openLinks:);
 			specifier;
 		})];
 
@@ -120,13 +121,13 @@ BOOL clearDir(NSString *dir) {
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Browse fonts from online") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"online"];
-	   		 specifier->action = @selector(openCredits:);
+	   		 specifier->action = @selector(openLinks:);
 			specifier;
 		})];
 		[specifiers addObject:({
 			PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:LocalizeString(@"Open font folder") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
 			[specifier setIdentifier:@"filza"];
-	    	specifier->action = @selector(openCredits:);
+	    	specifier->action = @selector(openLinks:);
 			specifier;
 		})];
 
@@ -226,31 +227,18 @@ BOOL clearDir(NSString *dir) {
 	return dic;
 }
 
--(void)openCredits:(PSSpecifier *)specifier {
+-(void)openLinks:(PSSpecifier *)specifier {
 	NSString *value = specifier.identifier;
 	NSString *loc;
-	NSString *gloc;
-	if([value isEqualToString:@"BawAppie"]) {
-		loc = @"https://twitter.com/BawAppie";
-		gloc = @"googlechromes://twitter.com/BawAppie";
-	}
-	if([value isEqualToString:@"filza"]) {
-		loc = @"filza://view/Library/A-Font/";
-		gloc = @"filza://view/Library/A-Font/";
-	}
-	if([value isEqualToString:@"online"]) {
-		loc = @"https://a-font.rpgfarm.com";
-		gloc = @"googlechromes://a-font.rpgfarm.com";
-	}
-	if([value isEqualToString:@"license"]) {
-		loc = @"https://gitlab.com/Baw-Appie/A-Font/-/blob/master/LICENSE";
-		gloc = @"googlechromes://gitlab.com/Baw-Appie/A-Font/-/blob/master/LICENSE";
-	}
+	if([value isEqualToString:@"BawAppie"]) loc = @"https://twitter.com/BawAppie";
+	if([value isEqualToString:@"filza"]) loc = [NSString stringWithFormat:@"filza://view%@", AFontPath];
+	if([value isEqualToString:@"online"]) loc = @"https://a-font.rpgfarm.com";
+	if([value isEqualToString:@"license"]) loc = @"https://gitlab.com/Baw-Appie/A-Font/-/blob/master/LICENSE";
 	UIApplication *app = [UIApplication sharedApplication];
-	if([app canOpenURL:[NSURL URLWithString:@"googlechromes://"]] && gloc) [app openURL:[NSURL URLWithString:gloc] options:@{} completionHandler:nil];
-	else [app openURL:[NSURL URLWithString:loc] options:@{} completionHandler:nil];
+	[app openURL:[NSURL URLWithString:loc] options:@{} completionHandler:nil];
 }
 -(void)getPreference {
+	AFontPath = [[NSFileManager defaultManager] fileExistsAtPath:@"/var/Liy/"] ? @"/var/Liy/Library/A-Font/" : @"/Library/A-Font/";
 	if(![[NSFileManager defaultManager] fileExistsAtPath:PREFERENCE_IDENTIFIER]) prefs = [[NSMutableDictionary alloc] init];
 	else prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:PREFERENCE_IDENTIFIER];
 }
