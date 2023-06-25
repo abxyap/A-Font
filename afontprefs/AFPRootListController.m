@@ -3,14 +3,17 @@
 #import <spawn.h>
 #import <objc/runtime.h>
 #define PREFERENCE_IDENTIFIER @"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"
+NSFileManager *manager;
 NSMutableDictionary *prefs;
 NSString *AFontPath;
+BOOL isDopamine;
+NSBundle *localizedBundle;
 
 @interface UIApplication (Private)
 - (void)openURL:(NSURL *)url options:(NSDictionary *)options completionHandler:(void (^)(BOOL success))completion;
 @end
 
-#define LocalizeString(key) [[NSBundle bundleWithPath:@"/Library/PreferenceBundles/AFontPrefs.bundle"] localizedStringForKey:key value:key table:@"prefs"]
+#define LocalizeString(key) [localizedBundle localizedStringForKey:key value:key table:@"prefs"]
 
 NSString *findBoldFont(NSArray *list, NSString *name) {
 	NSString *orig_font = [name stringByReplacingOccurrencesOfString:@" R" withString:@""];
@@ -238,8 +241,14 @@ BOOL clearDir(NSString *dir) {
 	[app openURL:[NSURL URLWithString:loc] options:@{} completionHandler:nil];
 }
 -(void)getPreference {
-	AFontPath = [[NSFileManager defaultManager] fileExistsAtPath:@"/var/Liy/"] ? @"/var/Liy/Library/A-Font/" : @"/Library/A-Font/";
-	if(![[NSFileManager defaultManager] fileExistsAtPath:PREFERENCE_IDENTIFIER]) prefs = [[NSMutableDictionary alloc] init];
+	manager = [NSFileManager defaultManager];
+	isDopamine = [manager fileExistsAtPath:@"/var/jb/.installed_dopamine"];
+	localizedBundle = [NSBundle bundleWithPath:isDopamine ? @"/var/jb/Library/PreferenceBundles/AFontPrefs.bundle" : @"/Library/PreferenceBundles/AFontPrefs.bundle"];
+	if([manager fileExistsAtPath:@"/var/Liy/"]) AFontPath = @"/var/Liy/Library/A-Font/";
+	else if([manager fileExistsAtPath:@"/var/jb/.installed_dopamine"]) AFontPath = @"/var/jb/Library/A-Font/";
+	else AFontPath = @"/Library/A-Font/";
+
+	if(![manager fileExistsAtPath:PREFERENCE_IDENTIFIER]) prefs = [[NSMutableDictionary alloc] init];
 	else prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:PREFERENCE_IDENTIFIER];
 }
 - (void)Respring {

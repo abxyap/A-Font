@@ -126,7 +126,7 @@ static UIFont *defaultFont;
 }
 %end
 %hook UIFont
-%property BOOL isInitializedWithCoder;
+%property (assign) BOOL isInitializedWithCoder;
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
 	if([arg1 containsString:@"disableAFont"]) return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2);
   	if(checkFont(arg1)) return %orig;
@@ -423,7 +423,9 @@ NSArray *getFullFontList() {
 	if([plistDict[@"blacklist"][identifier] isEqual:@1]) return;
 
 	NSFileManager *manager = [NSFileManager defaultManager];
-	AFontPath = [manager fileExistsAtPath:@"/var/Liy/"] ? @"/var/Liy/Library/A-Font/" : @"/Library/A-Font/";
+	if([manager fileExistsAtPath:@"/var/Liy/"]) AFontPath = @"/var/Liy/Library/A-Font/";
+	else if([manager fileExistsAtPath:@"/var/jb/.installed_dopamine"]) AFontPath = @"/var/jb/Library/A-Font/";
+	else AFontPath = @"/Library/A-Font/";
 
 	NSArray *subpaths = [manager contentsOfDirectoryAtPath:AFontPath error:NULL];
 	// [UIFont familyNames];

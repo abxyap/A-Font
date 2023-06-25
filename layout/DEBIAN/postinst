@@ -1,1 +1,7 @@
-chmod 777 /Library/A-Font
+#!/bin/bash
+
+if [ -f "/var/jb/.installed_dopamine" ]; then
+    chmod 777 /var/jb/Library/A-Font
+else 
+    chmod 777 /Library/A-Font
+fi
