@@ -2,7 +2,7 @@
 #include "AFPBlackListController.h"
 #import <spawn.h>
 #import <objc/runtime.h>
-#define PREFERENCE_IDENTIFIER @"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"
+NSString *PREFERENCE_IDENTIFIER;
 NSFileManager *manager;
 NSMutableDictionary *prefs;
 NSString *AFontPath;
@@ -247,7 +247,7 @@ BOOL clearDir(NSString *dir) {
 	if([manager fileExistsAtPath:@"/var/Liy/"]) AFontPath = @"/var/Liy/Library/A-Font/";
 	else if([manager fileExistsAtPath:@"/var/jb/.installed_dopamine"]) AFontPath = @"/var/jb/Library/A-Font/";
 	else AFontPath = @"/Library/A-Font/";
-
+	PREFERENCE_IDENTIFIER = isDopamine ? @"/var/jb/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist" : @"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist";
 	if(![manager fileExistsAtPath:PREFERENCE_IDENTIFIER]) prefs = [[NSMutableDictionary alloc] init];
 	else prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:PREFERENCE_IDENTIFIER];
 }

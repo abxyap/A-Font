@@ -58,31 +58,31 @@ BOOL isBoldFont(NSString* font) {
 - (int)traits;
 @end
 
-@interface NSMutableAttributedString (Additions)
-- (void)setFontFace;
-@end
+// @interface NSMutableAttributedString (Additions)
+// - (void)setFontFace;
+// @end
 
 static UIFont *defaultFont;
 
-@implementation NSMutableAttributedString (Additions)
-- (void)setFontFace {
-	[self beginEditing];
-	[self enumerateAttribute:NSFontAttributeName inRange:NSMakeRange(0, self.length) options:0 usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
-		__strong UIFont *ret = (__strong UIFont *)value;
-		if(ret == nil) return;
-		if(ret.fontName != defaultFont.fontName && (boldfontname && ret.fontName != boldfontname)) {
-			if(checkFont(ret.fontName)) return;
-			UIFont *newFont;
-			if(isBoldFont(ret.fontName) && boldfontname) newFont = [UIFont fontWithName:boldfontname size:ret.pointSize];
-			else newFont = [UIFont fontWithName:fontname size:ret.pointSize];
+// @implementation NSMutableAttributedString (Additions)
+// - (void)setFontFace {
+// 	[self beginEditing];
+// 	[self enumerateAttribute:NSFontAttributeName inRange:NSMakeRange(0, self.length) options:0 usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+// 		__strong UIFont *ret = (__strong UIFont *)value;
+// 		if(ret == nil) return;
+// 		if(ret.fontName != defaultFont.fontName && (boldfontname && ret.fontName != boldfontname)) {
+// 			if(checkFont(ret.fontName)) return;
+// 			UIFont *newFont;
+// 			if(isBoldFont(ret.fontName) && boldfontname) newFont = [UIFont fontWithName:boldfontname size:ret.pointSize];
+// 			else newFont = [UIFont fontWithName:fontname size:ret.pointSize];
 
-			[self removeAttribute:NSFontAttributeName range:range];
-			[self addAttribute:NSFontAttributeName value:newFont range:range];
-		}
-	}];
-	[self endEditing];
-}
-@end
+// 			[self removeAttribute:NSFontAttributeName range:range];
+// 			[self addAttribute:NSFontAttributeName value:newFont range:range];
+// 		}
+// 	}];
+// 	[self endEditing];
+// }
+// @end
 
 @interface UILabel (Property)
 @property (nonatomic) BOOL isAFontApplied;
@@ -416,16 +416,18 @@ NSArray *getFullFontList() {
 %ctor {
 	if(!objc_getClass("UIFont")) return;
 	identifier = [NSBundle mainBundle].bundleIdentifier;
+	if([identifier containsString:@"com.apple."]) return;
 	if([identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.springboard.SBRendererService"] || [identifier isEqualToString:@"com.apple.Search.Framework"]) return;
-	
-	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
-	NSMutableDictionary *fontMatchTempDict = [NSMutableDictionary new];
-	if([plistDict[@"blacklist"][identifier] isEqual:@1]) return;
 
 	NSFileManager *manager = [NSFileManager defaultManager];
+	BOOL isDopamine = [manager fileExistsAtPath:@"/var/jb/.installed_dopamine"];
 	if([manager fileExistsAtPath:@"/var/Liy/"]) AFontPath = @"/var/Liy/Library/A-Font/";
-	else if([manager fileExistsAtPath:@"/var/jb/.installed_dopamine"]) AFontPath = @"/var/jb/Library/A-Font/";
+	else if(isDopamine) AFontPath = @"/var/jb/Library/A-Font/";
 	else AFontPath = @"/Library/A-Font/";
+
+	NSMutableDictionary *plistDict = [[NSMutableDictionary alloc] initWithContentsOfFile:isDopamine ? @"/var/jb/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist" : @"/var/mobile/Library/Preferences/com.rpgfarm.afontprefs.plist"];
+	NSMutableDictionary *fontMatchTempDict = [NSMutableDictionary new];
+	if([plistDict[@"blacklist"][identifier] isEqual:@1]) return;
 
 	NSArray *subpaths = [manager contentsOfDirectoryAtPath:AFontPath error:NULL];
 	// [UIFont familyNames];
@@ -443,7 +445,7 @@ NSArray *getFullFontList() {
 			NSData *data = [NSData dataWithContentsOfFile:fullPath];
 			CGDataProviderRef fontDataProvider = CGDataProviderCreateWithCFData((CFDataRef)data);
 			CGFontRef cg_font = CGFontCreateWithDataProvider(fontDataProvider);
-    		CTFontRef ct_font = CTFontCreateWithGraphicsFont(cg_font, 36., NULL, NULL);
+  		CTFontRef ct_font = CTFontCreateWithGraphicsFont(cg_font, 36., NULL, NULL);
 			NSString *familyName = (NSString *)CTFontCopyFamilyName(ct_font);
 			fontMatchTempDict[familyName] = fullPath;
 		}
