@@ -10,7 +10,6 @@ static BOOL isSpringBoard;
 static NSNumber *size;
 static NSMutableDictionary *fontMatchDict;
 static NSString *identifier;
-
 static NSString *AFontPath;
 
 typedef NSString *UIFontTextStyle;
@@ -415,8 +414,17 @@ NSArray *getFullFontList() {
 
 %ctor {
 	if(!objc_getClass("UIFont")) return;
+
+	NSArray *args = [[NSProcessInfo processInfo] arguments];
+	if (args == nil || args.count == 0) return;
+
+	NSString *execPath = args[0];
+	// isEqualToString and rangeOfString is crashed on some internal processes?
+	BOOL isSpringBoard = strcmp([[execPath lastPathComponent] UTF8String], "SpringBoard") == 0;
+	BOOL isApplication = strstr([execPath UTF8String], "/Application") != nil;
+	if(!isSpringBoard && !isApplication) return;
+
 	identifier = [NSBundle mainBundle].bundleIdentifier;
-	if([identifier containsString:@"com.apple."]) return;
 	if([identifier isEqualToString:@"com.apple.photos.VideoConversionService"] || [identifier isEqualToString:@"com.apple.springboard.SBRendererService"] || [identifier isEqualToString:@"com.apple.Search.Framework"]) return;
 
 	NSFileManager *manager = [NSFileManager defaultManager];
@@ -446,7 +454,7 @@ NSArray *getFullFontList() {
 			CGDataProviderRef fontDataProvider = CGDataProviderCreateWithCFData((CFDataRef)data);
 			CGFontRef cg_font = CGFontCreateWithDataProvider(fontDataProvider);
   		CTFontRef ct_font = CTFontCreateWithGraphicsFont(cg_font, 36., NULL, NULL);
-			NSString *familyName = (NSString *)CTFontCopyFamilyName(ct_font);
+			NSString *familyName = (NSString *)CFBridgingRelease(CTFontCopyFamilyName(ct_font));
 			fontMatchTempDict[familyName] = fullPath;
 		}
 	}
