@@ -1,5 +1,6 @@
 #include <UIKit/UIKit.h>
 #import <CoreText/CoreText.h>
+#import <HBLog.h>
 #import "headers.h"
 
 static NSString *fontname;
@@ -53,6 +54,7 @@ BOOL isBoldFont(NSString* font) {
 @interface UIFont (AFontPrivate)
 @property (nonatomic) BOOL isInitializedWithCoder;
 + (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2;
++ (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2 traits:(int)arg3;
 - (id)initWithFamilyName:(id)arg1 traits:(int)arg2 size:(double)arg3;
 - (int)traits;
 @end
@@ -127,18 +129,23 @@ static UIFont *defaultFont;
 %hook UIFont
 %property (assign) BOOL isInitializedWithCoder;
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 {
-	if([arg1 containsString:@"disableAFont"]) return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2);
-  	if(checkFont(arg1)) return %orig;
+	// if([arg1 containsString:@"disableAFont"]) return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2);
+	if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig(boldfontname, getSize(arg2));
 	if([arg1 containsString:@"Bold"]) return %orig(boldfontname, getSize(arg2));
   else return %orig(fontname, getSize(arg2));
 }
 %new
 + (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2 {
+	return [self fontWithNameWithoutAFont:arg1 size:arg2 traits:0];
+}
+%new
++ (id)fontWithNameWithoutAFont:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
 	if([arg1 containsString:@"disableAFont"]) return [self fontWithName:arg1 size:arg2];
-	else return [self fontWithName:[NSString stringWithFormat:@"%@disableAFont", arg1] size:arg2];
+	else return [self fontWithName:[NSString stringWithFormat:@"%@disableAFont", arg1] size:arg2 traits:arg3];
 }
 + (id)fontWithName:(NSString *)arg1 size:(double)arg2 traits:(int)arg3 {
+	if([arg1 containsString:@"disableAFont"]) return %orig([arg1 stringByReplacingOccurrencesOfString:@"disableAFont" withString:@""], arg2, arg3);
   if(checkFont(arg1)) return %orig;
 	if([arg1 isEqualToString:boldfontname]) return %orig(boldfontname, getSize(arg2), arg3);
   else return %orig(fontname, getSize(arg2), arg3);
@@ -159,7 +166,7 @@ static UIFont *defaultFont;
 }
 + (UIFont *)systemFontOfSize:(double)arg1 traits:(int)arg2 {
 	if(isSpringBoard && ![size isEqual:@1]) return %orig;
-	return [self fontWithNameWithoutAFont:fontname size:arg1];
+	return [self fontWithNameWithoutAFont:fontname size:arg1 traits:arg2];
 }
 + (UIFont *)systemFontOfSize:(double)arg1 {
 	if(isSpringBoard && ![size isEqual:@1]) return %orig;
@@ -175,7 +182,7 @@ static UIFont *defaultFont;
   return [self fontWithNameWithoutAFont:fontname size:arg1];
 }
 + (id)_systemFontsOfSize:(double)arg1 traits:(int)arg2 {
-  return [self fontWithNameWithoutAFont:fontname size:arg1];
+  return [self fontWithNameWithoutAFont:fontname size:arg1 traits:arg2];
 }
 + (id)_thinSystemFontOfSize:(double)arg1 {
   return [self fontWithNameWithoutAFont:fontname size:arg1];
@@ -484,5 +491,8 @@ NSArray *getFullFontList() {
     %init(SpringBoard);
 		float version = [[[UIDevice currentDevice] systemVersion] floatValue];
 		if(isSpringBoard && version >= 12 && version < 13) %init(iOS12);
+		
+		// HBLogError(@"[AFont] %@", [[UIFont fontWithName:@"Helvetica" size:10] fontName]);
+		// HBLogError(@"[AFont] %@", [[UIFont fontWithNameWithoutAFont:@"Helvetica" size:10] fontName]);
   }
 }
